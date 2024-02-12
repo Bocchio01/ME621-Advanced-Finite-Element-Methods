@@ -1,0 +1,153 @@
+Clear["Global`*"];
+plots := True;
+$Assumptions=Element[{L1,L2,A1,A2,E1,E2,u,v},Reals]&&L1>0&&L2>0&&A1>0&&A2>0&&E1>0&&E2>0;
+
+(*Setting values for the problem datas*)
+problemDatas = {
+E1-> 70*10^9,A1->10^-3,L1->3,
+E2->70*10^9,A2->10^-3,L2->0.5
+};
+
+domainPlotLimit:=0.001;
+
+(*Beam lenght*)
+l[u_,v_] ={
+{Sqrt[(L1+u)^2+v^2]},
+{Sqrt[u^2+(L2+v)^2]}
+};
+
+(*Green strain*)
+eps[u_,v_] = {
+{(l[u,v][[1, 1]]^2-L1^2)/(2*L1^2)},
+{(l[u,v][[2, 1]]^2-L2^2)/(2*L2^2)}
+};
+
+(*F_{int}*)
+Fint[u_,v_]={
+{E1*A1*eps[u,v][[1,1]]},
+{E2*A2*eps[u,v][[2,1]]}
+};
+
+(*Trigonometry relations*)
+cosAlpha[u_,v_]=(L1+u)/l[u,v][[1, 1]];
+sinAlpha[u_,v_]=v/l[u,v][[1, 1]];
+cosBeta[u_,v_]=(L2+v)/l[u,v][[2, 1]];
+sinBeta[u_,v_]=u/l[u,v][[2, 1]];
+
+(*Equilibrium of the system*)
+Pexact[u_,v_]={
+{Fint[u,v][[1, 1]]*cosAlpha[u,v]+Fint[u,v][[2, 1]]*sinBeta[u,v]},
+{Fint[u,v][[1, 1]]*sinAlpha[u,v]+Fint[u,v][[2, 1]]*cosBeta[u,v]}
+};
+
+(*Defining the taylor expansion series*)
+Ptaylor[x_, y_, taylorOrder_] := Normal @ Series[Pexact[u, v] /. Thread[{u, v} -> {0, 0} + t {x, y}], {t, 0, taylorOrder}] /. t -> 1;
+
+(*Approximated models*)
+PapproximatedSoft[u_,v_]={
+{Fint[u,v][[1, 1]]*1+Fint[u,v][[2, 1]]*u},
+{Fint[u,v][[1, 1]]*v+Fint[u,v][[2, 1]]*1}
+};
+
+PapproximatedHard[u_,v_]={
+{Fint[u,v][[1, 1]]*1+Fint[u,v][[2, 1]]*0},
+{Fint[u,v][[1, 1]]*0+Fint[u,v][[2, 1]]*1}
+};
+
+(*Final results*)
+MatrixForm[Pexact[u,v]]
+MatrixForm[Ptaylor[u,v,1]]
+MatrixForm[Ptaylor[u,v,2]]
+MatrixForm[Ptaylor[u,v,3]]
+MatrixForm[PapproximatedSoft[u,v]]
+MatrixForm[PapproximatedHard[u,v]]
+Out[250]//MatrixForm= ((A1 E1 (L1+u) (-L1^2+(L1+u)^2+v^2))/(2 L1^2 Sqrt[(L1+u)^2+v^2])+(A2 E2 u (-L2^2+u^2+(L2+v)^2))/(2 L2^2 Sqrt[u^2+(L2+v)^2])
+(A1 E1 v (-L1^2+(L1+u)^2+v^2))/(2 L1^2 Sqrt[(L1+u)^2+v^2])+(A2 E2 (L2+v) (-L2^2+u^2+(L2+v)^2))/(2 L2^2 Sqrt[u^2+(L2+v)^2])
+
+)
+Out[251]//MatrixForm= ((A1 E1 u)/L1
+(A2 E2 v)/L2
+
+)
+Out[252]//MatrixForm= ((A1 E1 u)/L1+(A2 E2 u v)/L2^2+(A1 E1 (u^2+v^2))/(2 L1^2)
+(A2 E2 v)/L2+(A1 E1 u v)/L1^2+(A2 E2 (u^2+v^2))/(2 L2^2)
+
+)
+Out[253]//MatrixForm= ((A1 E1 u)/L1+(A2 E2 u v)/L2^2-(A1 E1 u v^2)/(2 L1^3)+(A2 E2 u (u^2-v^2))/(2 L2^3)+(A1 E1 (u^2+v^2))/(2 L1^2)
+(A2 E2 v)/L2+(A1 E1 u v)/L1^2-(A2 E2 u^2 v)/(2 L2^3)+(A1 E1 v (-u^2+v^2))/(2 L1^3)+(A2 E2 (u^2+v^2))/(2 L2^2)
+
+)
+Out[254]//MatrixForm= ((A1 E1 (-L1^2+(L1+u)^2+v^2))/(2 L1^2)+(A2 E2 v (-L2^2+u^2+(L2+v)^2))/(2 L2^2)
+(A1 E1 v (-L1^2+(L1+u)^2+v^2))/(2 L1^2)+(A2 E2 (-L2^2+u^2+(L2+v)^2))/(2 L2^2)
+
+)
+Out[255]//MatrixForm= ((A1 E1 (-L1^2+(L1+u)^2+v^2))/(2 L1^2)
+(A2 E2 (-L2^2+u^2+(L2+v)^2))/(2 L2^2)
+
+)
+(*Plot the difference between the taylor expansion and the exact formulation of Px(u,v)*)
+(*Plot3D[PtaylorEvaluated[x,y,taylorOrder][[1, 1]]-PexactEvaluated[x,y][[1, 1]] ,{x,-domainPlotLimit,domainPlotLimit},{y,-domainPlotLimit,domainPlotLimit}, ImageSize->Large] // Print;*)
+PexactEvaluated[x_,y_]:=Pexact[x, y] /. problemDatas;
+PtaylorEvaluated[x_,y_,taylorOrder_]:=Ptaylor[x, y, taylorOrder] /. problemDatas;
+PapproximatedSoftEvaluated[x_,y_]:=PapproximatedSoft[x, y] /. problemDatas;
+PapproximatedHardEvaluated[x_,y_]:=PapproximatedHard[x, y] /. problemDatas;
+
+
+If[plots,
+For[taylorOrder=1,taylorOrder<=3,taylorOrder++,
+Export[FileNameJoin[{NotebookDirectory[],"latex","pdf","error_taylor_order_"<>ToString[taylorOrder]<>".eps"}],
+Plot3D[PtaylorEvaluated[x,y,taylorOrder][[1, 1]]-PexactEvaluated[x,y][[1, 1]] ,{x,-domainPlotLimit,domainPlotLimit},{y,-domainPlotLimit,domainPlotLimit}]];
+];
+
+Export[FileNameJoin[{NotebookDirectory[],"latex","pdf","error_approximated_hard.eps"}],
+Plot3D[PapproximatedHardEvaluated[x,y][[1, 1]]-PexactEvaluated[x,y][[1, 1]] ,{x,-domainPlotLimit,domainPlotLimit},{y,-domainPlotLimit,domainPlotLimit}]];
+
+Export[FileNameJoin[{NotebookDirectory[],"latex","pdf","error_approximated_soft.eps"}],
+Plot3D[PapproximatedSoftEvaluated[x,y][[1, 1]]-PexactEvaluated[x,y][[1, 1]] ,{x,-domainPlotLimit,domainPlotLimit},{y,-domainPlotLimit,domainPlotLimit}]];
+
+Null
+]
+Out[285]= $Aborted
+In[261]:= (*Latex format*)
+SetDirectory[NotebookDirectory[] <>"latex"];
+Export["Equations.tex",
+{
+TeXForm[Pexact[u,v]],
+TeXForm[Ptaylor[u,v,1]],
+TeXForm[Ptaylor[u,v,2]],
+TeXForm[Ptaylor[u,v,3]],
+TeXForm[PapproximatedSoft[u,v]],
+TeXForm[PapproximatedHard[u,v]]
+},
+"Text"];
+
+In[263]:= SetDirectory[NotebookDirectory[] <>"/../Commons"];
+<<ToMATLAB.m
+SetDirectory[NotebookDirectory[] <>"models"];
+f=OpenWrite["Models.m"];
+WriteMatlab[D[Pexact[u,v], {{u,v}}],f,"Kt_exact"];
+WriteMatlab[D[Ptaylor[u,v,1], {{u,v}}],f,"Kt_taylor_1"];
+WriteMatlab[D[Ptaylor[u,v,2], {{u,v}}],f,"Kt_taylor_2"];
+WriteMatlab[D[Ptaylor[u,v,3], {{u,v}}],f,"Kt_taylor_3"];
+WriteMatlab[D[PapproximatedSoft[u,v], {{u,v}}],f,"Kt_approximated_soft"];
+WriteMatlab[D[PapproximatedHard[u,v], {{u,v}}],f,"Kt_approximated_hard"];
+
+(*Just because we don't have any other F_{int} contribution*)
+WriteMatlab[Pexact[u,v],f,"Fint_exact"];
+WriteMatlab[Ptaylor[u,v,1],f,"Fint_taylor_1"];
+WriteMatlab[Ptaylor[u,v,2],f,"Fint_taylor_2"];
+WriteMatlab[Ptaylor[u,v,3],f,"Fint_taylor_3"];
+WriteMatlab[PapproximatedSoft[u,v], f, "Fint_approximated_soft"];
+WriteMatlab[PapproximatedHard[u,v], f, "Fint_approximated_hard"];
+
+Close[f];
+In[280]:= Plot[Fint[x,0][[1,1]]/. problemDatas,{x,0 ,10^5}]
+Out[280]=
+In[289]:= TeXForm[D[Ptaylor[u,v,1], {{u,v}}]]
+Out[289]//TeXForm=
+\left(
+\begin{array}{c}
+ \left\{\frac{\text{A1} \text{E1}}{\text{L1}},0\right\} \\
+ \left\{0,\frac{\text{A2} \text{E2}}{\text{L2}}\right\} \\
+\end{array}
+\right)

@@ -1,0 +1,60 @@
+\subsection{Approximation of P = f(u)}
+\label{subsec:approximation}
+
+Under the hypothesis of small displacements, we can approximate the force-displacement relationship \ref{eq:force_displacement_relationship} to obtain a simpler system of equations.
+
+
+\subsubsection{Approximation (acceptable/soft)}
+
+Working on the trigonometric functions, we can approximate the cosine and sine functions as follows:
+
+\begin{align}
+    lim_{\alpha \to 0} \cos(\alpha) & = 1      \\
+    lim_{\alpha \to 0} \sin(\alpha) & = \alpha \\
+    lim_{\beta \to 0} \cos(\beta)   & = 1      \\
+    lim_{\beta \to 0} \sin(\beta)   & = \beta
+    \label{eq:trigonometric_approximation_soft}
+\end{align}
+
+By substituting in the force-displacement relationship \ref{eq:force_displacement_relationship}, we obtain the following approximated system of equations:
+
+\begin{equation}
+    \begin{Bmatrix}
+        P_{x,approx,soft} \\
+        P_{y,approx,soft}
+    \end{Bmatrix}
+    =
+    \begin{Bmatrix}
+        \frac{\text{A}_1 \text{E}_1 \left(2 \text{L}_1 u+u^2+v^2\right)}{\text{L}_1^2}+\frac{\text{A}_2 \text{E}_2 u \left(v (2 \text{L}_2+v)+u^2\right)}{\text{L}_2^2} \\
+        \frac{\text{A}_1 \text{E}_1 v \left(2 \text{L}_1 u+u^2+v^2\right)}{\text{L}_1^2}+\frac{\text{A}_2 \text{E}_2 \left(v (2 \text{L}_2+v)+u^2\right)}{\text{L}_2^2}
+    \end{Bmatrix}
+    \label{eq:force_displacement_relationship_approximation_soft}
+\end{equation}
+
+
+\subsubsection{Approximation (bad/hard)}
+
+To see how a bad approximation could bring to a shifted or wrong solution, we will assume that:
+
+\begin{align}
+    \cos(\alpha) & = \frac{\text{L}_1+u}{l_1} \approx 1 \\
+    \sin(\alpha) & = \frac{v}{l_1} \approx 0            \\
+    \cos(\beta)  & = \frac{\text{L}_2+u}{l_2} \approx 1 \\
+    \sin(\beta)  & = \frac{v}{l_2} \approx 0
+    \label{eq:trigonometric_approximation_hard}
+\end{align}
+
+By substituting in the force-displacement relationship \ref{eq:force_displacement_relationship}, we obtain the following approximated system of equations:
+
+\begin{equation}
+    \begin{Bmatrix}
+        P_{x,approx,hard} \\
+        P_{y,approx,hard}
+    \end{Bmatrix}
+    =
+    \begin{Bmatrix}
+        \frac{\text{A}_1 \text{E}_2 \left(-\text{L}_1^2+(\text{L}_1+u)^2+v^2\right)}{2 \text{L}_1^2} \\
+        \frac{\text{A}_2 \text{E}_2 \left(-\text{L}_2^2+(\text{L}_2+v)^2+u^2\right)}{2 \text{L}_2^2}
+    \end{Bmatrix}
+    \label{eq:force_displacement_relationship_approximation_hard}
+\end{equation}

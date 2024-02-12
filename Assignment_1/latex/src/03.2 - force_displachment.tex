@@ -1,0 +1,78 @@
+\subsection{Force displacement relationship}
+\label{subsec:force_displacement_relationship}
+
+So far we have obtained the equilibrium equations for the system.
+We can now proceed to obtain the force-displacement relationship, which will allow us to solve the system of equations ${\vec{P}} = f({\vec{u}})$.
+To do so, we try to express everything on the right-hand side of the equilibrium equations \ref{eq:equilibrium_equations_scalar} in terms of the displacements $u$ and $v$.
+
+From simple trigonometrical considerations, we can obtain the following relationships:
+
+\begin{align}
+    \cos(\alpha) & = \frac{\text{L}_1+u}{l_1} \\
+    \sin(\alpha) & = \frac{v}{l_1}            \\
+    \cos(\beta)  & = \frac{\text{L}_2+v}{l_2} \\
+    \sin(\beta)  & = \frac{u}{l_2}
+    \label{eq:trigonometrical_relationships}
+\end{align}
+
+We can now proceed working on the forces, knowing that the internal forces are linked to the strains by the following relationship:
+
+\begin{equation}
+    \begin{Bmatrix}
+        F_1 \\
+        F_2
+    \end{Bmatrix}
+    =
+    \begin{Bmatrix}
+        \text{A}_1 \text{E}_1 \epsilon_1 \\
+        \text{A}_2 \text{E}_2 \epsilon_2
+    \end{Bmatrix}
+    \label{eq:internal_forces_strains_relationship}
+\end{equation}
+
+And the strains are linked to the displacements by the following relationship:
+
+\begin{equation}
+    \begin{Bmatrix}
+        \epsilon_1 \\
+        \epsilon_2
+    \end{Bmatrix}
+    =
+    \begin{Bmatrix}
+        \frac{l_1^2-\text{L}_1^2}{2 \text{L}_1^2} \\
+        \frac{l_2^2-\text{L}_2^2}{2 \text{L}_2^2}
+    \end{Bmatrix}
+    \label{eq:strains_displacements_relationship}
+\end{equation}
+
+Finally, we can give the following definition to the real length of the beams:
+
+\begin{equation}
+    \begin{Bmatrix}
+        l_1 \\
+        l_2
+    \end{Bmatrix}
+    =
+    \begin{Bmatrix}
+        \sqrt{(\text{L}_1+u)^2+v^2} \\
+        \sqrt{u^2+(\text{L}_2+v)^2}
+    \end{Bmatrix}
+    \label{eq:real_length}
+\end{equation}
+
+We can now substitute the equations above in the equilibrium equations \ref{eq:equilibrium_equations_scalar} to obtain the force displacement relationship:
+
+\begin{equation}
+    \begin{Bmatrix}
+        P_x \\
+        P_y
+    \end{Bmatrix}
+    =
+    \begin{Bmatrix}
+        \frac{\text{A}_1 \text{E}_2 (\text{L}_1+u) \left(-\text{L}_1^2+(\text{L}_1+u)^2+v^2\right)}{2 \text{L}_1^2 \sqrt{(\text{L}_1+u)^2+v^2}}+\frac{\text{A}_2 \text{E}_2 u \left(-\text{L}_2^2+(\text{L}_2+v)^2+u^2\right)}{2 \text{L}_2^2 \sqrt{(\text{L}_2+v)^2+u^2}} \\
+        \frac{\text{A}_1 \text{E}_2 v \left(-\text{L}_1^2+(\text{L}_1+u)^2+v^2\right)}{2 \text{L}_1^2 \sqrt{(\text{L}_1+u)^2+v^2}}+\frac{\text{A}_2 \text{E}_2 (\text{L}_2+v) \left(-\text{L}_2^2+(\text{L}_2+v)^2+u^2\right)}{2 \text{L}_2^2 \sqrt{(\text{L}_2+v)^2+u^2}}
+    \end{Bmatrix}
+    \label{eq:force_displacement_relationship}
+\end{equation}
+
+Even if quite long, the equation \ref{eq:force_displacement_relationship} are nothing more than a function ${\vec{P}} = f({\vec{u}})$ which can be solved numerically for a given value of ${\vec{P^*}}$ to find the corresponding value of ${\vec{u^*}}$.

@@ -1,0 +1,7 @@
+Model name,Px,Py,Ux,Uy
+model-exact,5000,5000,2.14e-04,3.57e-05
+model-taylor-1,5000,5000,2.14e-04,3.57e-05
+model-taylor-2,5000,5000,2.14e-04,3.57e-05
+model-taylor-3,5000,5000,2.14e-04,3.57e-05
+model-approximated-soft,5000,5000,2.14e-04,3.57e-05
+model-approximated-hard,5000,5000,2.14e-04,3.57e-05

@@ -1,0 +1,85 @@
+\section{Requests}
+\label{sec:requests}
+
+A system of two aluminum bars of the same material is shown in the following figure.
+The system is subjected to two external loads, $P_x$ and $P_y$, at joint B.
+A and C are connected to pinned supports.
+
+\begin{figure}[h]
+    \centering
+    \begin{tikzpicture}[scale=3]
+
+        \coordinate (A) at (0,0.5);
+        \coordinate (B) at (3,0.5);
+        \coordinate (Bf) at (3.7,1);
+        \coordinate (C) at (3,0);
+
+        % Joint names
+        \node at (A) [above, left] {A};
+        \node at (B) [below, above] {B};
+        \node at (C) [below, left] {C};
+
+        % Initial position
+        \draw (A) -- (B) node[midway, below] {$L_1$};
+        \draw (C) -- (B) node[midway, left] {$L_2$};
+
+        % Deformed position
+        \draw[dashed] (A) -- (Bf)node[midway, above] {$l_1$};
+        \draw[dashed] (C) -- (Bf)node[midway, right] {$l_2$};
+
+        % Labels
+        \pic [draw, ->, "$\alpha$", angle radius=2cm] {angle = B--A--Bf};
+        \pic [draw, <-, "$\beta$", angle radius=0.7cm] {angle = Bf--C--B};
+
+        % Support at the end of Beam 1
+        \draw[fill] (0,0.5) circle (0.03);
+
+        % Support at the end of Beam 2
+        \draw[fill] (3,0) circle (0.03);
+
+        % Arrows at coordinate Bf
+        \draw[->] (Bf) -- ++(0.3, 0) node[right] {$\vec{P_x}$};
+        \draw[->] (Bf) -- ++(0, 0.3) node[above] {$\vec{P_y}$};
+        \draw[->] (B) -- (Bf) node[midway, above] {$\vec{u}$};
+        % \draw[->, shorten >=150pt] (Bf) -- (A) node[above, above] {$\vec{F_1}$};
+        % \draw[->, shorten >=50pt] (Bf) -- (C) node[above, right] {$\vec{F_2}$};
+
+    \end{tikzpicture}
+    \caption{Problem representation}
+    \label{fig:problem_representation}
+\end{figure}
+
+The problem asks to:
+
+\begin{itemize}
+    \item Obtain the external loads $P_x$ and $P_y$ as a function of horizontal and vertical displacements at point B (namely $u$ and $v$).
+    \item Determine the displacements in both $x$ and $y$ directions for $1000$ load increments of $+5\text{N}$ for both $P_x$ and $P_y$ (from zero).
+    \item Find the displacement of point B after the final increment.
+\end{itemize}
+
+Write a \texttt{MATLAB} code with a convergence error of $10^-5$ to numerically solve the problem.
+Use a combination of (a) Euler and N-R, and (b) Euler and modified N-R.
+Also plot the resultant force versus the resultant displacement.
+
+Use the Green strain measure:
+
+\begin{equation}
+    E_i = \frac{l_i^2 - L_i^2}{2L_i^2}
+    \label{eq:green_strain_measure_formula}
+\end{equation}
+
+From now on, we will refer to the Green strain measure as $\epsilon_{1,2}$ to differentiate it from the Young's modulus $E_{1,2}$.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        \textbf{Parameter} & \textbf{Value} & \textbf{Unit} \\ \hline
+        $E_1 = E_2 = E$    & $70$           & $\text{GPa}$  \\ \hline
+        $L_1$              & $3$            & $\text{m}$    \\ \hline
+        $L_2$              & $0.5$          & $\text{m}$    \\ \hline
+        $A_1 = A_2 = A$    & $0.0001$       & $\text{m}^2$  \\ \hline
+    \end{tabular}
+    \caption{Parameters of the system}
+    \label{tab:parameters_of_the_system}
+\end{table}

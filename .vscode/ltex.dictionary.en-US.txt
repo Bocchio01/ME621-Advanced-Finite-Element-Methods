@@ -1,0 +1,3 @@
+Mathematica
+mathematica
+Newton-Raphson

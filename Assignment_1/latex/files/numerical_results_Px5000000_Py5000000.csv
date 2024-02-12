@@ -1,0 +1,6 @@
+Model name,Px,Py,Ux,Uy
+model-exact,0,4000000,-9.72e-05,2.78e-02
+model-taylor-1,0,4000000,0.00e+00,2.86e-02
+model-taylor-3,0,4000000,-9.73e-05,2.78e-02
+model-approximated-soft,0,4000000,-1.10e-04,2.78e-02
+model-approximated-hard,0,4000000,-1.29e-04,2.78e-02

@@ -1,0 +1,45 @@
+\section{Results}
+\label{sec:results}
+
+The numerical results for the problem described in Section \ref{sec:requests} are reported in the following.
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|l|l|l|}
+        \hline
+        \textbf{Model name}     & \textbf{Px} & \textbf{Py} & \textbf{Ux} & \textbf{Uy} \\ \hline
+        model-exact             & 5000        & 5000        & 2.14e-04    & 3.57e-05    \\ \hline
+        model-taylor-1          & 5000        & 5000        & 2.14e-04    & 3.57e-05    \\ \hline
+        model-taylor-2          & 5000        & 5000        & 2.14e-04    & 3.57e-05    \\ \hline
+        model-taylor-3          & 5000        & 5000        & 2.14e-04    & 3.57e-05    \\ \hline
+        model-approximated-soft & 5000        & 5000        & 2.14e-04    & 3.57e-05    \\ \hline
+        model-approximated-hard & 5000        & 5000        & 2.14e-04    & 3.57e-05    \\ \hline
+    \end{tabular}
+    \caption{Numerical results for the different models used.}
+    \label{tab:results_Px5000_Py5000}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=.9\textwidth]{img/force_versus_displacement_Px5000}
+        \caption{Force versus displacement $P_x(u_x) @ P_y = 0$}
+        \label{fig:force_versus_displacement_Px5000}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.45\textwidth}
+        \centering
+        \includegraphics[width=.9\textwidth]{img/force_versus_displacement_Py5000}
+        \caption{Force versus displacement $P_y(u_y) @ P_x = 0$}
+        \label{fig:force_versus_displacement_Py5000}
+    \end{subfigure}
+    \label{fig:force_versus_displacement_Px5000_Py5000}
+\end{figure}
+
+Notice how the final displacement are basically the same for all the models.
+This is due to the fact that the displacement is in the order of $10^{-4}$ and the error introduced by the linearization or the approximation models is negligible.
+
+\include{src/06.1 - comparison_time_iterations}
+\include{src/06.2 - comparison_models}
+

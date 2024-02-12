@@ -1,0 +1,3 @@
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q[ style=mathematica, language=Mathematica, caption=Mathematica notebook used for symbolic analysis of the equations., firstline=1, lastline=56 ]notebook.txt\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q[style=mathematica, language=Mathematica, caption=Mathematica notebook used for symbolic analysis of the equations., firstline=1, lastline=56 ]notebook.txt\\E$"}
+{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\Q[style=mathematica, language=Mathematica, caption=Mathematica notebook used for symbolic analysis of the equations., firstline=1, lastline=56]notebook.txt\\E$"}

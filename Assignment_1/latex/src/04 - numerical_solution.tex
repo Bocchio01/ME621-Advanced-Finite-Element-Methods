@@ -1,0 +1,64 @@
+\section{Numerical solution}
+\label{sec:numerical_solution}
+
+We can now proceed to solve the system of equations ${\vec{P}} = f({\vec{u}})$ numerically.
+To do so, we will use two different combined methods, in the form of Predictor-Corrector, that are:
+
+\begin{itemize}
+    \item Euler and Newton-Raphson
+    \item Euler and modified Newton-Raphson
+\end{itemize}
+
+Just as a review of the methods, we report in the following the algorithms for the tree methods applied to a 2D problem (easily extendable to 3D).
+
+Notice that with the symbol $[K_t]$ we are referring to the tangent stiffness matrix, that by definition is:
+
+\begin{equation}
+    [K_t] = \frac{\partial \vec{P_{ext}}}{\partial \vec{u}}
+    =
+    \begin{bmatrix}
+        \frac{\partial P_{ext,x}}{\partial u} & \frac{\partial P_{ext,x}}{\partial v} \\
+        \frac{\partial P_{ext,y}}{\partial u} & \frac{\partial P_{ext,y}}{\partial v}
+    \end{bmatrix}
+    \label{eq:tangent_stiffness_matrix}
+\end{equation}
+
+Instead, with the symbol $\vec{R}$ we are referring to the residual vector, that by definition is:
+
+\begin{equation}
+    \vec{R} = \vec{F_{int}} - \vec{P_{ext}}
+    \label{eq:residual_vector}
+\end{equation}
+
+Since we will work in a discretized domain, we will use the subscript $n$ to refer to the previous iteration, and the subscript $n+1$ to refer to the current iteration.
+So $[K_{t,n}]$ and $\vec{R_n}$ will simply be the tangent stiffness matrix and the residual vector evaluated at the previous iteration referring to the displacement $\vec{u_n}$.
+
+\subsection{Euler}
+
+Used as predictor, the Euler method is defined as:
+
+\begin{equation}
+    {\vec{u}_{n+1}} = {\vec{u}_n} + [K_{t,n}]^{-1} * {\vec{P_{ext,n}}}
+    \label{eq:euler_method}
+\end{equation}
+
+
+\subsection{Newton-Raphson}
+
+Used as corrector, the Newton-Raphson method is defined as:
+
+\begin{equation}
+    {\vec{u}_{n+1}} = {\vec{u}_n} - [K_{t,n}]^{-1} * {\vec{R_n}}
+    \label{eq:newton_raphson_method}
+\end{equation}
+
+\subsection{Modified Newton-Raphson}
+
+Similarly to the Newton-Raphson method, the modified Newton-Raphson method is defined as:
+
+\begin{equation}
+    {\vec{u}_{n+1}} = {\vec{u}_n} - [K_{t,0}]^{-1} * {\vec{R_n}}
+    \label{eq:modified_newton_raphson_method}
+\end{equation}
+
+Where $[K_{t,0}]$ is the tangent stiffness matrix evaluated at the first iteration.

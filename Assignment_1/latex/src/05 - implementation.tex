@@ -1,0 +1,66 @@
+\section{Implementation}
+\label{sec:implementation}
+
+For each of the previous models (\ref{eq:force_displacement_relationship},\ref{eq:taylor_series_expansion_order_1},\ref{eq:taylor_series_expansion_order_2},\ref{eq:taylor_series_expansion_order_3},\ref{eq:force_displacement_relationship_approximation_soft},\ref{eq:force_displacement_relationship_approximation_hard}) we can then compute the tangent stiffness matrix and the internal force vector as function of $\vec{u}$.
+By applying the definition \ref{eq:tangent_stiffness_matrix} and \ref{eq:residual_vector} we are able to basically compute for each model two functions $f_{K_t}(\vec{u})$ and $f_{R}(\vec{u})$ that will return the tangent stiffness matrix and the residual vector evaluated at the current iteration referring to the displacement $\vec{u_n}$.
+
+As an example, we report the functions $f_{K_t}(\vec{u})$ and $f_{R}(\vec{u})$ for the model \ref{eq:taylor_series_expansion_order_1}:
+
+\begin{equation}
+    f_{K_t}(\vec{u}) =
+    \begin{bmatrix}
+        \frac{\partial P_{ext,x}}{\partial u} & \frac{\partial P_{ext,x}}{\partial v} \\
+        \frac{\partial P_{ext,y}}{\partial u} & \frac{\partial P_{ext,y}}{\partial v}
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        \frac{\partial}{\partial u} \left( \frac{\text{A}_1 \text{E}_1}{L_1} \left( u - u_0 \right) \right) & \frac{\partial}{\partial v} \left( \frac{\text{A}_1 \text{E}_1}{L_1} \left( u - u_0 \right) \right) \\
+        \frac{\partial}{\partial u} \left( \frac{\text{A}_2 \text{E}_2}{L_2} \left( v - v_0 \right) \right) & \frac{\partial}{\partial v} \left( \frac{\text{A}_2 \text{E}_2}{L_2} \left( v - v_0 \right) \right)
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        \frac{\text{A}_1 \text{E}_1}{\text{L}_1} & 0                                        \\
+        0                                        & \frac{\text{A}_2 \text{E}_2}{\text{L}_2}
+    \end{bmatrix}
+    \label{eq:tangent_stiffness_matrix_taylor_series_expansion_order_1}
+\end{equation}
+
+\begin{equation}
+    f_{R}(\vec{u}) = \vec{F_{int}} - \vec{P_{ext}}
+    \label{eq:residual_vector_taylor_series_expansion_order_1}
+\end{equation}
+
+\begin{equation}
+    \vec{F_{int}} =
+    \begin{bmatrix}
+        \frac{\text{A}_1 \text{E}_1}{\text{L}_1} \left( u - u_0 \right) \\
+        \frac{\text{A}_2 \text{E}_2}{\text{L}_2} \left( v - v_0 \right)
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        \frac{\text{A}_1 \text{E}_1}{\text{L}_1} u \\
+        \frac{\text{A}_2 \text{E}_2}{\text{L}_2} v
+    \end{bmatrix}
+    \label{eq:internal_force_vector_taylor_series_expansion_order_1}
+\end{equation}
+
+When it comes to \texttt{MATLAB} code, the functions $f_{K_{t,n}}(\vec{u_n})$ and $f_{F_{int,n}}(\vec{u_n})$ are implemented as follows:
+
+\begin{lstlisting}[language=Matlab]
+function [Kt, Fint] = model_taylor_1(U, geometry)
+
+    [L1, A1, E1, L2, A2, E2] = decompose_geometry(geometry); % From a struct to variables
+    [u, v] = decompose_u(U); % From a vector to variables
+
+    Kt = [
+        [A1.*E1.*L1.^(-1) 0];
+        [0 A2.*E2.*L2.^(-1)]
+        ];
+
+    Fint = [
+        A1.*E1.*L1.^(-1).*u;
+        A2.*E2.*L2.^(-1).*v
+        ];
+
+end
+\end{lstlisting}

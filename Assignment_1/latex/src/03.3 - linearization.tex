@@ -1,0 +1,68 @@
+\subsection{Linearization of P = f(u)}
+\label{subsec:linearization}
+
+Before proceeding with the numerical solution of the system, we can try to linearize the system to obtain a linear system of equations.
+To do so, we can use a Taylor series expansion of the force-displacement relationship \ref{eq:force_displacement_relationship} around the equilibrium position $\vec{u} = \vec{0}$.
+A general Taylor series expansion of a function $f(x, y)$ around the point $(x_0, y_0)$ is given by:
+
+\begin{align}
+    f(x, y) & = f(x_0, y_0) + \nonumber                                                                                                                                                                                                                                  \\
+            & + \frac{\partial f}{\partial x}(x_0, y_0) \cdot (x - x_0) + \frac{\partial f}{\partial y}(x_0, y_0) \cdot (y - y_0) + \nonumber                                                                                                                            \\
+            & + \frac{1}{2} \frac{\partial^2 f}{\partial x^2}(x_0, y_0) \cdot (x - x_0)^2 + \frac{1}{2} \frac{\partial^2 f}{\partial y^2}(x_0, y_0) \cdot (y - y_0)^2 + \frac{\partial^2 f}{\partial x \partial y}(x_0, y_0) \cdot (x - x_0) \cdot (y - y_0) + \nonumber \\
+            & + \dots
+    \label{eq:taylor_series_expansion}
+\end{align}
+
+
+\subsubsection{Taylor series of order 1}
+
+By applying the Taylor series expansion of order 1, we obtain the following system of linear equations:
+
+\begin{equation}
+    \begin{Bmatrix}
+        \widehat{P_x} \\
+        \widehat{P_y}
+    \end{Bmatrix}
+    =
+    \begin{Bmatrix}
+        \frac{\text{A}_1 \text{E}_2 u}{\text{L}_1} \\
+        \frac{\text{A}_2 \text{E}_2 v}{\text{L}_2}
+    \end{Bmatrix}
+    \label{eq:taylor_series_expansion_order_1}
+\end{equation}
+
+
+\subsubsection{Taylor series of order 2}
+
+By applying the Taylor series expansion of order 2, we obtain the following system of quadratic equations:
+
+\begin{equation}
+    \begin{Bmatrix}
+        \widehat{\widehat{P_x}} \\
+        \widehat{\widehat{P_y}}
+    \end{Bmatrix}
+    =
+    \begin{Bmatrix}
+        \frac{\text{A}_1 \text{E}_2 \left(u^2+v^2\right)}{2 \text{L}_1^2}+\frac{\text{A}_1 \text{E}_2 u}{\text{L}_1}+\frac{\text{A}_2 \text{E}_2 u v}{\text{L}_2^2} \\
+        \frac{\text{A}_1 \text{E}_2 u v}{\text{L}_1^2}+\frac{\text{A}_2 \text{E}_2 \left(u^2+v^2\right)}{2 \text{L}_2^2}+\frac{\text{A}_2 \text{E}_2 v}{\text{L}_2}
+    \end{Bmatrix}
+    \label{eq:taylor_series_expansion_order_2}
+\end{equation}
+
+
+\subsubsection{Taylor series of order 3}
+
+By applying the Taylor series expansion of order 3, we obtain the following system of cubic equations:
+
+\begin{equation}
+    \begin{Bmatrix}
+        \widehat{\widehat{\widehat{P_x}}} \\
+        \widehat{\widehat{\widehat{P_y}}}
+    \end{Bmatrix}
+    =
+    \begin{Bmatrix}
+        -\frac{\text{A}_1 \text{E}_2 u v^2}{2 \text{L}_1^3}+\frac{\text{A}_1 \text{E}_2 \left(u^2+v^2\right)}{2 \text{L}_1^2}+\frac{\text{A}_1 \text{E}_2 u}{\text{L}_1}+\frac{\text{A}_2 \text{E}_2 u \left(u^2-v^2\right)}{2 \text{L}_2^3}+\frac{\text{A}_2 \text{E}_2 u v}{\text{L}_2^2} \\
+        \frac{\text{A}_1 \text{E}_2 v \left(v^2-u^2\right)}{2 \text{L}_1^3}+\frac{\text{A}_1 \text{E}_2 u v}{\text{L}_1^2}-\frac{\text{A}_2 \text{E}_2 u^2 v}{2 \text{L}_2^3}+\frac{\text{A}_2 \text{E}_2 \left(u^2+v^2\right)}{2 \text{L}_2^2}+\frac{\text{A}_2 \text{E}_2 v}{\text{L}_2}
+    \end{Bmatrix}
+    \label{eq:taylor_series_expansion_order_3}
+\end{equation}
