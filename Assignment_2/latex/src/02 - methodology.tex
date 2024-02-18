@@ -1,0 +1,9 @@
+\section{Methodology}
+\label{sec:methodology}
+
+We will start by writing the analytical expression of the \textbf{shape functions} for the 4-node element with total length $h_e$ and $\alpha = \beta = \frac{1}{3}$ in terms of the parent coordinate system, $-1 \leq \xi \leq 1$.
+To do so, we will make use of \texttt{Mathematica} to perform the symbolic computation and obtain the exact expression of the shape functions.
+
+We will proceed by writing the elemental matrices ($B_0^e$, $f_{int}^e$, $f_{ext}^e$, $f_{kin}^e$) still in terms of the parent coordinate system.
+
+We will then write the \textbf{MATLAB} code to solve the problem implementing the explicit integration scheme with Total Lagrangian finite element formulation and finally plot the deformation of the right end of the bar vs time, namely $u_{end}(t)$.

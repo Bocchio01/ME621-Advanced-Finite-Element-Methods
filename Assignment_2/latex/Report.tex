@@ -1,0 +1,66 @@
+\documentclass{../../commons/assignment}
+
+\usepackage{float}
+\usepackage{tikz}
+\usepackage{adjustbox}
+\usepackage{titlesec}
+\usepackage{soul}
+\usepackage{csvsimple}
+
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+\usetikzlibrary{calc,patterns,angles,quotes}
+\setlength{\parindent}{0pt}
+
+\hypersetup{
+pdftitle={ME621 - Advanced Finite Element Methods},
+pdfsubject={Report for assignment 2},
+pdfauthor={Tommaso Bocchietti}
+}
+
+\begin{document}
+\graphicspath{{./img/}}
+
+
+\title{ME621 - Advanced Finite Element Methods \\ Assignment 2}
+\author{Tommaso Bocchietti}
+\date{A.Y. 2023/24 - W24}
+
+\maketitle
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=.9\textwidth]{./pdf/UniversityOfWaterloo_logo_vert_pms}
+    \label{fig:University_Of_Waterloo_logo}
+\end{figure}
+
+\clearpage
+\tableofcontents
+\listoffigures
+\listoftables
+\clearpage
+
+\input{src/01 - requests}
+\input{src/02 - methodology}
+\input{src/03 - solution}
+\input{src/04 - implementation}
+
+\input{src/05 - results}
+
+\clearpage
+\appendix
+\section{Mathematica code}
+\label{sec:appendix}
+
+Here follows the \texttt{Mathematica} notebook used for symbolic analysis of the equations.
+
+\lstinputlisting[
+    style=mathematica,
+    language=Mathematica,
+    caption=Mathematica notebook used for symbolic analysis of the equations.,
+    firstline=1,
+    lastline=43
+]{files/notebook.txt}
+
+\end{document}

@@ -1,0 +1,43 @@
+\section{Implementation}
+\label{sec:implementation}
+
+Given that most of the FEM problem is based on the evaluation of integrals, it's now useful to report in the following the implementation the Gaussian quadrature integration method.
+
+\begin{lstlisting}[language=Matlab]
+function result = method_gaussian_quadrature_integration(integrand_func, fem)
+    % METHOD_GAUSSIAN_QUADRATURE_INTEGRATION
+    %   This function computes the integral of a given function using the
+    %   Gaussian quadrature method.
+    %
+    %   result = METHOD_GAUSSIAN_QUADRATURE_INTEGRATION(integrand_func, fem)
+    %
+    %   integrand_func: function handle to the integrand
+    %   fem: struct containing the number of Gauss points required
+    %
+    %   result: value of the integral
+
+
+    switch fem.N_Gauss_points
+    case 1
+        weights = [2];
+        roots = [0];
+    case 2
+        weights = [1, 1];
+        roots = [-1/sqrt(3), 1/sqrt(3)];
+    case 3
+        weights = [5/9, 8/9, 5/9];
+        roots = [-sqrt(3/5), 0, sqrt(3/5)];
+    otherwise
+        error('Order of Gaussian quadrature not implemented (too high)')
+    end
+
+    result = 0;
+    for root_idx = 1:length(roots)
+
+        result = result + integrand_func(roots(root_idx)) * weights(root_idx);
+
+    end
+end
+\end{lstlisting}
+
+The core algorithm of the explicit Lagrangian FEM is implemented in the 'Main.m' file attached to this report.

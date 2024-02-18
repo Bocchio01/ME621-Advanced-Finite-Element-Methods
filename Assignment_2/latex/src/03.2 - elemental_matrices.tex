@@ -1,0 +1,53 @@
+\subsection{Elemental matrices}
+\label{subsec:elemental_matrices}
+
+So far, we have derived the shape functions and the compatibility functions for the 4-node element in terms of the local coordinates system.
+We can now proceed to derive the elemental matrices for the given problem.
+
+The elemental matrices (and vectors) are computed starting from previously derived shape functions and compatibility functions.
+Given that we have computed both the shape and compatibility functions in terms of the local coordinates system $\xi$, we will compute the elemental matrices in terms of the local coordinates system as well.
+
+By definition, the elemental matrices are given by the following integrals:
+
+% dfint[\[Xi]_] := Transpose[B0\[Xi]] . B0\[Xi] . ue * E0  * A0 * D[X[\[Xi]], \[Xi]];
+% dfbody[\[Xi]_] := R0 * A0 * b * Transpose[N0\[Xi]] * D[X[\[Xi]], \[Xi]];
+% ftraction := Transpose[N0\[Xi] /. \[Xi] -> 1]*A0 *\[Tau] - Transpose[N0\[Xi] /. \[Xi] -> -1]*A0*\[Tau];
+% dm[\[Xi]_] := R0 * A0 * Transpose[N0\[Xi]] . N0\[Xi] * D[X[\[Xi]], \[Xi]];
+
+\begin{align}
+    \label{eq:elemental_matrices}
+    f_{int}^e & = \int_{X_1^e}^{X_n^e} B_0^{eT} P A_0 dX                                                                             \\
+    f_{ext}^e & = f_{body}^e + f_{traction}^e = \int_{X_1^e}^{X_n^e} N^{eT} \rho_0 b A_0 dX + [N^{eT} A_0 \tau \Big|_{X_1^e}^{X_n^e} \\
+    M^e       & = \int_{X_1^e}^{X_n^e} N^{eT} \rho_0 A_0 N^e dX
+\end{align}
+
+Where $B_0^e$ and $N^e$ are the matrices of the shape and compatibility functions in terms of the global coordinate system.
+
+If we suppose to deal with a linear element (one that has a linear constitutive equation), then we can substitute the definition of $P = E \frac{du}{dX}$ (First Piola Kirchhoff stress, equivalent to engineering stress in 1D) in the definition of $f_{int}^e$ and obtain:
+
+\begin{align}
+    f_{int}^e & = \int_{X_1^e}^{X_n^e} B_0^{eT} E_0 A_0 \frac{du}{dX} dX =           \\
+              & = \int_{X_1^e}^{X_n^e} B_0^{eT} E_0 A_0 \frac{dN}{dX} u_{nodal} dX = \\
+              & = \int_{X_1^e}^{X_n^e} B_0^{eT} E_0 A_0 B_0^e dX u_{nodal}^e
+\end{align}
+
+Where $u_{nodal}^e$ is the vector of the nodal displacements of the element $e$.
+
+Given that both $B_0^e$ and $N^e$ have been computed in terms of the local coordinates system $\xi$, then to perform the integrals we need to change the integration variable from $X$ to $\xi$.
+To do so, we simply need to multiply the integrals by the Jacobian of the transformation, which is given by:
+
+\begin{equation}
+    J = \frac{dX}{d\xi} = \frac{X_2 - X_1}{2} = \frac{h_e}{2}
+\end{equation}
+
+Where $h_e$ is the length of the element $e$.
+
+Our final formulation for the elemental matrices is then given by:
+
+\begin{align}
+    f_{int}^e & = \int_{-1}^{1} B_0^{eT} E_0 A_0 B_0^e J d\xi u_{nodal}^e = \int_{-1}^{1} B_0^{eT} E_0 A_0 B_0^e \frac{h_e}{2} d\xi u_{nodal}^e                                           \\
+    f_{ext}^e & = \int_{-1}^{1} N^{eT} \rho_0 b A_0 J d\xi + \left[ N^{eT} A_0 \tau \right]_{-1}^{1} = \int_{-1}^{1} N^{eT} \rho_0 b A_0 J d\xi + \left[ N^{eT} A_0 \tau \right]_{-1}^{1} \\
+    M^e       & = \int_{-1}^{1} N^{eT} \rho_0 A_0 N^e J d\xi = \int_{-1}^{1} N^{eT} \rho_0 A_0 N^e \frac{h_e}{2} d\xi
+\end{align}
+
+Where $B_0^e$, $N^e$ and $J$ are now expressed in terms of the local coordinates system $\xi$.

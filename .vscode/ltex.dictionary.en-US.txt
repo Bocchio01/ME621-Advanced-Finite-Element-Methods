@@ -1,3 +1,4 @@
 Mathematica
 mathematica
 Newton-Raphson
+Jacobian

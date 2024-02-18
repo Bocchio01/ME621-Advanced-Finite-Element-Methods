@@ -1,0 +1,49 @@
+\subsection{Global matrices}
+\label{subsec:global_matrices}
+
+For the formulation of the FEM problem, we will need to compute the global matrices and vectors.
+
+So far we have computed the elemental matrices in terms of the local coordinates system $\xi$.
+We can now proceed to assemble the global matrices and vectors.
+
+\paragraph{Connectivity matrix}
+
+The assembly of the global matrices and vectors is performed by looping over all the elements and adding the contribution of each element to the corresponding global matrix or vector.
+We can use the \textbf{connectivity matrix} to map the local degrees of freedom to the global degrees of freedom.
+
+The connectivity matrix is also called Gather Scatter matrix and is defined as follows:
+
+\begin{equation}
+    L_{ij} =
+    \begin{cases}
+        1 & \text{if the i-th global degree of freedom is associated with the j-th local degree of freedom} \\
+        0 & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+We can also express the connectivity matrix for a given element using the Kronecker delta function as follows:
+
+\begin{equation}
+    L_{ij}^e = \delta_{i,j} =
+    \begin{cases}
+        1 & \text{if } j = (m-1)(e-1) + 1 \\
+        0 & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+Where $m$ is the number of nodes per element and $e$ is the element index.
+With a bit of algebra, we can state that the $L$ matrix has a size of $m \times n$ where $n$ is the number of global degrees of freedom ($n = lenght(u_{nodal})$).
+
+\paragraph{Assembly of the global matrices}
+
+Having defined the connectivity (or assembly) matrix, we can now proceed to assemble the global matrices and vectors.
+
+To do so, we will loop over all the elements and add the contribution of each element to the corresponding global matrix or vector.
+This concept can be expressed using the gather equation:
+
+\begin{align}
+    f_{global} & = \sum_{e=1}^{n_{el}} L^{eT} f^e     \\
+    M_{global} & = \sum_{e=1}^{n_{el}} L^{eT} M^e L^e
+\end{align}
+
+Where $L^e$ is the connectivity matrix for the $e-th$ element, and $f^e$ and $M^e$ are the elemental force vector and mass matrix, as computed in Equation \ref{eq:elemental_matrices}.

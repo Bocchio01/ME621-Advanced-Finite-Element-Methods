@@ -1,0 +1,51 @@
+Clear["Global`*"]
+
+(*Setting values for the problem datas*)
+nElements=1;
+nOfNodesPerElement=4;
+nOfNodes =(nOfNodesPerElement-1)*nElements + 1 ;
+
+(*Global nodes displachment vector*)
+ue=Array[Symbol["ue"<>ToString[#]]&,nOfNodesPerElement];
+u=Array[Symbol["u"<>ToString[#]]&,nOfNodes];
+
+ue =ArrayReshape[ue ,{nOfNodesPerElement, 1}];
+u =ArrayReshape[u ,{nOfNodes, 1}];
+
+(*Local nodes coordinates*)
+points=Array[{-1+#*2/(nOfNodesPerElement-1),0}&,nOfNodesPerElement,0];
+
+x1=0;
+x2=x1+le;
+
+X[Xi_]:=(Xi*(x2-x1)+(x1+x2))/2;
+Xi[x_]:=(2*x-(x1+x2))/(x2-x1);
+
+(*Local shape functions & compatibility functions*)
+(*Notice B0\[Xi] == B0x = D[N0\[Xi]/.\[Xi]->Xi[\[Xi]]/. \[Xi]->x, x];*)
+N0\[Xi] = Array[InterpolatingPolynomial[ReplacePart[points,#->{points[[#,1]],1}],\[Xi]]&, nOfNodesPerElement];
+B0\[Xi] = D[N0\[Xi], \[Xi]]*D[Xi[x], x];
+
+N0\[Xi] =ArrayReshape[N0\[Xi] ,{1, nOfNodesPerElement}];
+B0\[Xi] =ArrayReshape[B0\[Xi] ,{1, nOfNodesPerElement}];
+
+(*Local matrices and vectors in differential form*)
+dfint[\[Xi]_]:=Transpose[B0\[Xi]]. B0\[Xi] . ue * E0  * A0 * D[X[\[Xi]], \[Xi]];
+dfbody[\[Xi]_]:=R0 * A0 * b * Transpose[N0\[Xi]] * D[X[\[Xi]], \[Xi]];
+ftraction:=Transpose[N0\[Xi]/.\[Xi]->1]*A0 *\[Tau] - Transpose[N0\[Xi]/.\[Xi]->-1]*A0*\[Tau];
+dm[\[Xi]_]:=R0 * A0 * Transpose[N0\[Xi]] . N0\[Xi] * D[X[\[Xi]], \[Xi]];
+
+(*Local matrices and vectors in integral form*)
+fint = Integrate[dfint[\[Xi]], {\[Xi], -1, 1}];
+fext = Integrate[dfbody[\[Xi]], {\[Xi], -1, 1}] + ftraction;
+fkin = fext-fint;
+m = Integrate[dm[\[Xi]], {\[Xi], -1, 1}];
+
+(*Global matrices and vectors in integral form*)
+L[e_, i_, j_]:=Piecewise[{{1,(nOfNodesPerElement-1)*(e-1)+i ==j}},0]
+For[i=1,i<=nOfNodesPerElement,i++,
+plot = Plot[N0\[Xi][[1]][[i]],{\[Xi],-1,1},PlotRange->{{-1,1},{-0.4,1.1}}, PlotLabel->"Shape function N"<>ToString[i],AxesLabel->{"\[Xi]","N"<>ToString[i]}];
+(*plot = Plot[B0\[Xi][[i]]/.le->200,{\[Xi],-1,1},PlotLabel->"Shape function derived B"<>ToString[i],AxesLabel->{"\[Xi]","B"<>ToString[i]}];*)
+plot //Print;
+Export[FileNameJo],"latex","pdf","shape_function_N"<>ToString[i]<>".eps"}],plot];
+]
