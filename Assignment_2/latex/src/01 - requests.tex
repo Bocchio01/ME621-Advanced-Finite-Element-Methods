@@ -16,7 +16,6 @@ A tensile force $F$ is applied to the end of the rod as shown in Figure \ref{fig
         \foreach \y in {-1.8, -1.6, ..., 1.8}
         \draw (0, \y) -- ++(-0.2, +0.2);
 
-
     \end{tikzpicture}
     \caption{Problem representation}
     \label{fig:problem_representation}
@@ -36,6 +35,24 @@ The problem asks:
     \item Calculate the displacement of the node on the very right end after $t = 0.01s$ assuming the force is linearly increased at $100000 kN/s$ from $0 kN$ to $1000 kN$. Plot the deformation of the right end of the bar vs time. The force is intentionally high and rapid in order to allow for a visual representation of the deformation behavior (ignore yielding and assume elasticity).
     \item Is there a difference in the deformation behavior if the $1000 kN$ force is applied instantaneously at the beginning of the simulation (i.e. at $t=0$)? Plot the deformation of the right end vs time.
 \end{itemize}
+
+\begin{figure}[h]
+    \centering
+    \def\he{4}
+
+    \begin{tikzpicture}
+
+        \draw[-] (0, 0) -- ++(\he, 0);
+        \draw[|-|] (0, 0.1) -- ++(1/3*\he, 0) node[midway, above]{$\alpha h_e$};
+        \draw[|-|] (2/3*\he, 0.1) -- ++(1/3*\he, 0) node[midway, above]{$\beta h_e$};
+
+        \foreach \x in {0, 1, 2, 3}
+        \node at (\x / 3 * \he, 0)[below] {$X^e_\the\numexpr\x+1\relax$};
+
+    \end{tikzpicture}
+    \caption{Element representation}
+    \label{fig:element_representation}
+\end{figure}
 
 \begin{table}[H]
     \centering

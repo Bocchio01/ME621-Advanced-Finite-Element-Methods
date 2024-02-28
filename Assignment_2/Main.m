@@ -5,11 +5,10 @@
 
 clc
 clear variables
-close all
+% close all
 
 %% Problem datas
 
-% Check unit of measure!
 rod = struct( ...
     'L0', 200, ...
     'A0', 300, ...
@@ -18,13 +17,13 @@ rod = struct( ...
 
 fem = struct( ...
     'N_elements', 5, ...
-    'N_nodes_element', 3, ...
+    'N_nodes_element', 4, ...
     'N_Gauss_points', 3, ...
     'stress_model', "FPK", ...
     'T_final', 0.01, ...
-    'F_current', [0 0], ...
-    'F_initial', [0 1000]', ...
-    'F_final', [1000 1000]');
+    'F_current', 0, ...
+    'F_initial', 1000e3, ...
+    'F_final', 1000e3);
 
 assert(fem.N_nodes_element >= 2, "The number of nodes per element must be at least 2")
 
@@ -33,13 +32,13 @@ assert(fem.N_nodes_element >= 2, "The number of nodes per element must be at lea
 
 N_nodes = (fem.N_nodes_element - 1) * fem.N_elements + 1;
 
-step = 0;
-time = 0;
+n = 1;
+t = 0;
 
 u = zeros(N_nodes, 1);
 sigma = zeros(N_nodes, 1);
 
-element = struct( ...
+el_handlers = struct( ...
     'N0', cell(1), ...
     'B0', cell(1), ...
     'f_int', NaN, ...
@@ -56,106 +55,111 @@ for node_element_idx = 1:fem.N_nodes_element
     B0_handlers{node_element_idx} = @(Xi) polyval(polyder(shape_coefficients(node_element_idx, :)), Xi) * 2 / rod.L0;
 end
 
-element.N0 = @(Xi) cell2mat(cellfun(@(fun) fun(Xi), N0_handlers, 'UniformOutput', false));
-element.B0 = @(Xi) cell2mat(cellfun(@(fun) fun(Xi), B0_handlers, 'UniformOutput', false));
+el_handlers.N0 = @(Xi) cell2mat(cellfun(@(fun) fun(Xi), N0_handlers, 'UniformOutput', false));
+el_handlers.B0 = @(Xi) cell2mat(cellfun(@(fun) fun(Xi), B0_handlers, 'UniformOutput', false));
 
-element.f_int = @(rod, fem, u, B0) compute_f_int(rod, fem, u, B0);
-element.f_ext = @(rod, fem, u, time) compute_f_ext(rod, fem, time, N0);
-element.M = compute_m(rod, fem, element.N0);
+el_handlers.f_int = @(rod, fem, u, B0) compute_f_int(rod, fem, u, B0);
+el_handlers.f_ext = @(rod, fem, N0) compute_f_ext(rod, fem, N0);
+el_handlers.M = compute_m(rod, fem, el_handlers.N0);
 
 clear N0 B0
 
 
-% Diagonal M
-
 %% Main loop
 
+eps = 1e-2;
+
 L = @(e) compute_gather_matrix(e, fem.N_nodes_element, N_nodes);
-sum(cellfun(@(e) L(e)' * element.M * L(e), num2cell(1:fem.N_elements), 'UniformOutput', false), 'all')
 
-globalMatrix = @(A) sum(cellfun(@(e) L(e)' * A * L(e), num2cell(1:fem.N_elements), 'UniformOutput', false));
-
-solver = struct( ...
-    'f', [], ...
-    'M',  diag(sum(globalMatrix(element.M), 2)), ...
-    'v', [], ...
-    'u', [], ...
-    'a', [], ...
-    'dt', +inf);
-
-while (time < fem.T_final)
-    
-    solver.f(step) = 0;
-    solver.dt = +inf;
-    
-    for element_idx = 1:fem.N_elements
-        
-        u_element = L(element_idx) * u;
-        v_element = L(element_idx) * solver.v; % TODO: how to compute v?
-        
-        f_int_element = 0;
-        
-        if (step ~= 0)
-            f_int_element = element.f_int(rod, fem, u_element, element.B0);
-            f_ext_element = element.f_ext(rod, fem, u_element, time);
-        end
-        
-        f_element_kin = f_ext_element - f_int_element;
-        
-        dt_critical = rod.L0 / sqrt(rod.E / rod.rho0);
-        solver.dt = min(solver.dt, dt_critical);
-        
-        solver.f(step) = solver.f(step) + L(element_idx)' * f_element_kin;
-        
-    end
-    
-    solver.dt = 0.875 * solver.dt;
-    
-    solver.a(step) = solver.M \ solver.f(step);
-    
-    if (step == 0)
-        solver.v(step) = 0 + solver.a(step) * solver.dt;
-    else
-        solver.v(step) = solver.v(step) + solver.a(step) * solver.dt;
-        
-    end
-    
-
-    solver.u(step+1) = solver.u(step) + solver.v(step) * solver.dt;
-
-    time = time + dt;
-    step = step + 1;
-    
+M_global = zeros(N_nodes);
+for el_idx = 1:fem.N_elements
+    M_global(:,:) = M_global(:,:) + L(el_idx)' * el_handlers.M * L(el_idx);
 end
 
+solver = struct( ...
+    'M',  diag(sum(M_global, 2)), ...
+    'dt', zeros(1, 1), ...
+    'u', zeros(N_nodes, 1), ...
+    'v_half', zeros(N_nodes, 1), ...
+    'a', zeros(N_nodes, 1), ...
+    'f', zeros(N_nodes, 1), ...
+    'w', zeros(1, 1), ...
+    'w_kin', zeros(1, 1), ...
+    'w_int', zeros(1, 1), ...
+    'w_ext', zeros(1, 1), ...
+    'element', struct( ...
+        'f', zeros(fem.N_nodes_element, 1), ...
+        'f_int', zeros(fem.N_nodes_element, 1), ...
+        'f_ext', zeros(fem.N_nodes_element, 1), ...
+        'u', zeros(fem.N_nodes_element, 1), ...
+        'v_half', zeros(fem.N_nodes_element, 1) ...
+    ));
+
+while (t < fem.T_final)
+
+    solver.f(:, n) = zeros(N_nodes, 1);
+    dt_critical = +inf;
+
+    % 05) Stress update algorithm
+    for element_idx = 1:fem.N_elements
+
+        solver.element.u = L(element_idx) * solver.u(:, max(n-1, 1));
+        solver.element.v_half = L(element_idx) * solver.v_half(:, max(n-1, 1));
+
+        solver.element.f_int = el_handlers.f_int(rod, fem, solver.element.u, el_handlers.B0);
+        solver.element.f_ext = el_handlers.f_ext(rod, fem, el_handlers.N0);
+
+        solver.element.f = solver.element.f_ext - solver.element.f_int;
+
+        dt_critical = min(1e-3 * rod.L0 / (fem.N_elements) / (fem.N_nodes_element-1) / sqrt(rod.E / rod.rho0), dt_critical);
+
+        solver.f(:, n) = solver.f(:, n) + L(element_idx)' * solver.element.f;
+
+    end
+
+    solver.dt(n) = 0.89 * dt_critical;
+
+    % 06) Compute acceleration
+    solver.a(:, n) = solver.M \ solver.f(:, n);
+
+    % 07) Nodal velocities at half-step
+    solver.v_half(:, n) = solver.v_half(:, max(n-1, 1)) + solver.a(:, n) * solver.dt(n);
+    solver.v_half(1, n) = 0;
+
+    % 09) Update nodal displacements
+    solver.u(:, n) = solver.u(:, max(n-1, 1)) + solver.v_half(:, n) * solver.dt(n);
+
+    % 10) Enforce displacements BCs
+    solver.u(1, n) = 0;
+
+    % 08) Check energy balance
+    solver.w_int(:, n) = solver.w_int(:, max(n-1, 1)) + (solver.u(:, n) - solver.u(:, max(n-1, 1)))' * ((solver.f(:, n) - solver.f(:, max(n-1, 1)))/2);
+    solver.w_ext(:, n) = solver.w_ext(:, max(n-1, 1)) + (solver.u(:, n) - solver.u(:, max(n-1, 1)))' * ((solver.f(:, n) - solver.f(:, max(n-1, 1)))/2);
+    solver.w_kin(:, n) = 1/2 * solver.v_half(:, n)' * solver.M * solver.v_half(:, n);
+    solver.w(n) = 1e-3 * (1e-3 * solver.w_kin(:, n) + solver.w_int(:, n) - solver.w_ext(:, n));
+    assert(abs(solver.w(:, n) - solver.w(:, max(n-1, 1))) < eps, "Energy Balance not verified")
+
+    % 11) Update time_step n and time t
+    t = t + solver.dt(n);
+    n = n + 1;
+
+    fem.F_current = ((fem.F_final - fem.F_initial) / (fem.T_final - 0)) * t + fem.F_initial;
+
+end
 
 
 
 %% Plots
 
-% Xi_vector = -1:0.1:1;
-%
-%
 % nexttile
-% hold on
-% grid on
-%
-% for N_idx = 1:length(element.N0)
-%     plot(Xi_vector, element.N0(Xi_vector), "LineWidth", 2)
-% end
-%
-% % legend_entries = arrayfun(@(N_idx) ['N', num2str(N_idx)], 1:length(shape_coefficients), 'UniformOutput', false);
-% % legend({legend_entries}, 'Location','best')
-% title(['Shape functions for a ' num2str(fem.N_nodes_element) '-nodes element'])
-%
-% nexttile
-% hold on
-% grid on
-%
-% for B_idx = 1:length(element.B0)
-%     plot(Xi_vector, element.B0{B_idx}(Xi_vector), "LineWidth", 2)
-% end
-%
-% % legend_entries = arrayfun(@(N_idx) ['N', num2str(N_idx)], 1:length(shape_coefficients), 'UniformOutput', false);
-% % legend({legend_entries}, 'Location','best')
-% title(['Compatibility functions for a ' num2str(fem.N_nodes_element) '-nodes element'])
+
+hold on
+grid on
+
+plot(cumsum(solver.dt), 1e6 * solver.u(end, :), "LineWidth", 2);
+
+title("End bar displacement");
+xlabel("t [s]")
+ylabel("u [\mum]")
+
+legend("F_{initial} = 0", "F_{initial} = 1000kN")

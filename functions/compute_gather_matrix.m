@@ -1,6 +1,6 @@
 function L = compute_gather_matrix(element_idx, N_nodes_element, N_nodes)
 
-condition = @(i, j) ((N_nodes_element - 1) * (element_idx - 1) + i == j)
+condition = @(i, j) ((N_nodes_element - 1) * (element_idx - 1) + i == j);
 
 L = zeros(N_nodes_element, N_nodes);
 

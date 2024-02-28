@@ -1,16 +1,6 @@
 % roots = vpasolve(legendreP(7,x) == 0)
 
 function result = method_gaussian_quadrature_integration(integrand_func, fem)
-% METHOD_GAUSSIAN_QUADRATURE_INTEGRATION
-%   This function computes the integral of a given function using the
-%   Gaussian quadrature method.
-%
-%   result = METHOD_GAUSSIAN_QUADRATURE_INTEGRATION(integrand_func, fem)
-%
-%   integrand_func: function handle to the integrand
-%   fem: struct containing the number of Gauss points required
-%
-%   result: value of the integral
 
 switch fem.N_Gauss_points
     case 1
@@ -27,9 +17,9 @@ switch fem.N_Gauss_points
 end
 
 result = 0;
-for root_idx = 1:length(roots)
+for point_idx = 1:length(roots)
     
-    result = result + integrand_func(roots(root_idx)) * weights(root_idx);
+    result = result + integrand_func(roots(point_idx)) * weights(point_idx);
     
 end
 
