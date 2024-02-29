@@ -10,6 +10,22 @@ The numerical results for the problem described in Section \ref{sec:requests} ar
     \label{fig:final_displacement}
 \end{figure}
 
-In Figure \ref{fig:final_displacement} we can observe a comparison between the situation in which the initial load is $F_{initial} = 0$ and linearly increased till $F_{final} = 1000kN$, and the situation in which $F_{initial} = F_{final} = 1000kN$.
+In Figure \ref{fig:final_displacement} we can observe the displacement of the right end of the bar as a function of time for different values of the initial load $F_{initial}$.
+In particular, as also the legend suggests, the plot represents:
 
-In both the situation we can appreciate how the inertia of the bar is able to absorb the initial load.
+\begin{itemize}
+    \item Blue curve: $F_{initial} = 0$, $F_{final} = 1000kN$ (linearly increased with respect to time)
+    \item Orange curve: $F_{initial} = F_{final} = 1000kN$ (constant)
+\end{itemize}
+
+As we can see, given the non-zero inertia of the bar, in both cases the rate of change of the displacement at the beginning is almost zero.
+
+After the very beginning of the simulation, we can observe how the displacement of the right end of the bar starts to increase.
+In particular, given the different applied loads, we have:
+
+\begin{itemize}
+    \item Blue curve: the displacement never reaches a point where the rate of change is constant in time, as the load is constantly increasing.
+    \item Orange curve: the displacement reaches a point where its rate of change is constant in time, as the load is constant. This means that displacement became linear or almost linear in time.
+\end{itemize}
+
+\input{src/05.1 - parallelism_with_the_mass_spring_system}

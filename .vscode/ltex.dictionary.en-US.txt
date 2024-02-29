@@ -2,3 +2,4 @@ Mathematica
 mathematica
 Newton-Raphson
 Jacobian
+diagonalized

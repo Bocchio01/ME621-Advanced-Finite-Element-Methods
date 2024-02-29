@@ -5,7 +5,7 @@
 
 clc
 clear variables
-% close all
+close all
 
 %% Problem datas
 
@@ -22,21 +22,15 @@ fem = struct( ...
     'stress_model', "FPK", ...
     'T_final', 0.01, ...
     'F_current', 0, ...
-    'F_initial', 1000e3, ...
+    'F_initial', 0, ...
     'F_final', 1000e3);
 
 assert(fem.N_nodes_element >= 2, "The number of nodes per element must be at least 2")
 
-
-%% Algorithm setup
-
 N_nodes = (fem.N_nodes_element - 1) * fem.N_elements + 1;
 
-n = 1;
-t = 0;
 
-u = zeros(N_nodes, 1);
-sigma = zeros(N_nodes, 1);
+%% Elemental matrices and vectors
 
 el_handlers = struct( ...
     'N0', cell(1), ...
@@ -62,12 +56,10 @@ el_handlers.f_int = @(rod, fem, u, B0) compute_f_int(rod, fem, u, B0);
 el_handlers.f_ext = @(rod, fem, N0) compute_f_ext(rod, fem, N0);
 el_handlers.M = compute_m(rod, fem, el_handlers.N0);
 
-clear N0 B0
+clear N0_handlers B0_handlers node_element_idx shape_coefficients
 
 
-%% Main loop
-
-eps = 1e-2;
+%% Algorithm setup
 
 L = @(e) compute_gather_matrix(e, fem.N_nodes_element, N_nodes);
 
@@ -94,6 +86,15 @@ solver = struct( ...
         'u', zeros(fem.N_nodes_element, 1), ...
         'v_half', zeros(fem.N_nodes_element, 1) ...
     ));
+
+clear M_global el_idx
+
+
+%% Main loop
+
+n = 1;
+t = 0;
+eps = 1e-2;
 
 while (t < fem.T_final)
 
@@ -147,12 +148,13 @@ while (t < fem.T_final)
 
 end
 
+clear element_idx dt_critical
+
 
 
 %% Plots
 
-% nexttile
-
+nexttile
 hold on
 grid on
 
@@ -162,4 +164,17 @@ title("End bar displacement");
 xlabel("t [s]")
 ylabel("u [\mum]")
 
-legend("F_{initial} = 0", "F_{initial} = 1000kN")
+legend(['F_{initial} =' num2str(fem.F_initial/1e3) ' kN'])
+
+% % To observe the displacement of the nodes along the rod at various time
+% % step. Given the high load at the end and the short period of time, we can
+% % see that basically just the last two nodes starts moving, while the rest
+% % of the bar remain in a steady condition.
+% nexttile
+% hold on
+% grid on
+% 
+% for i = floor(linspace(1, size(solver.u, 2), 50))
+%     plot(1:N_nodes, solver.u(:, i))
+% end
+
