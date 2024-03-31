@@ -1,0 +1,57 @@
+\subsection{Constitutive model}
+\label{subsec:constitutive_model}
+
+Our final major step in the solution of the problem at hand is the definition of the constitutive model.
+
+For the given problem, we are asked to use Truesdell objective stress rate to define the constitutive model.
+
+In continuum mechanics, an objective stress tensor (as for example the Truesdell one) is used to describe the rate of change of stress within the material undergoing deformation in a way that it doesn't depend on the observer's frame of reference.
+
+The Truesdell objective stress tensor is defined as:
+
+\begin{equation}
+    {\sigma}^{oT} = C : D = \dot{\sigma} - L \sigma - \sigma L^T + tr(L) \sigma
+    \label{eq:truesdell_stress_rate}
+\end{equation}
+
+where $\sigma$ is the Cauchy stress tensor, $C$ is the stiffness or elasticity tensor, $D$ is the (symmetric) rate of deformation, and $L$ is the (asymmetric) velocity gradient tensor.
+
+In particular, the following definition can be used inside Equation \ref{eq:truesdell_stress_rate}:
+
+\begin{equation}
+    C = \begin{bmatrix}
+        2\mu + \lambda & \lambda        & 0   \\
+        \lambda        & 2\mu + \lambda & 0   \\
+        0              & 0              & \mu
+    \end{bmatrix} = \frac{E}{(1 - \nu^2)} \begin{bmatrix}
+        1   & \nu & 0                 \\
+        \nu & 1   & 0                 \\
+        0   & 0   & \frac{1 - \nu}{2}
+    \end{bmatrix} \quad \text{Considering plane stress}
+    \label{eq:stiffness_tensor}
+\end{equation}
+
+\begin{equation}
+    L = \vec{\nabla} \otimes \vec{v} = \frac{\partial \vec{v}}{\partial \vec{x}} = \frac{\partial (\vec{v}_{node} N)}{\partial \vec{x}} = \vec{v}_{node} B^T
+    \label{eq:velocity_gradient_tensor}
+\end{equation}
+
+\begin{equation}
+    D = \frac{1}{2} (L + L^T) = B \vec{v}_{node}
+    \label{eq:rate_of_deformation}
+\end{equation}
+
+where $\mu$ is the shear modulus, $\lambda$ is the Lamé constant, $E$ is the Young's modulus, and $\nu$ is the Poisson's ratio.
+
+Given all the definitions above, we can observe that the only unknown in Equation \ref{eq:truesdell_stress_rate} is the rate of Cauchy stress tensor $\dot{\sigma}$, that can be computed as:
+
+\begin{equation}
+    \dot{\sigma} = C : D + L \sigma + \sigma L^T - tr(L) \sigma
+    \label{eq:rate_of_stress}
+\end{equation}
+
+The result from Equation \ref{eq:rate_of_stress} can be used to compute the stress tensor at the next time step in the simulation given that:
+
+\begin{equation}
+    \sigma_{n+1} = \sigma_n + \dot{\sigma}_{n+1/2} \Delta t_{n+1/2}
+\end{equation}

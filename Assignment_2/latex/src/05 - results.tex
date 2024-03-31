@@ -5,7 +5,7 @@ The numerical results for the problem described in Section \ref{sec:requests} ar
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=.8\textwidth]{img/end_bar_displacement}
+    \includegraphics[width=\textwidth]{img/end_bar_displacement_2.png}
     \caption{Displacement of the right end of the bar vs. time}
     \label{fig:final_displacement}
 \end{figure}
@@ -18,14 +18,41 @@ In particular, as also the legend suggests, the plot represents:
     \item Orange curve: $F_{initial} = F_{final} = 1000kN$ (constant)
 \end{itemize}
 
-As we can see, given the non-zero inertia of the bar, in both cases the rate of change of the displacement at the beginning is almost zero.
+It's easy to see the different behavior of the two cases.
 
-After the very beginning of the simulation, we can observe how the displacement of the right end of the bar starts to increase.
-In particular, given the different applied loads, we have:
+The application of a linearly increasing load (so without discontinuities at the beginning) leads to a displacement that is almost linear in time.
+The small oscillation behavior is due to inertia and discretization of the mass distribution along the bar.
 
-\begin{itemize}
-    \item Blue curve: the displacement never reaches a point where the rate of change is constant in time, as the load is constantly increasing.
-    \item Orange curve: the displacement reaches a point where its rate of change is constant in time, as the load is constant. This means that displacement became linear or almost linear in time.
-\end{itemize}
+On the other hand, the application of a constant load (but with a strong discontinuity at the beginning) leads to a displacement that is definitively not linear (or constant) in time.
+The oscillatory behavior is dominant with respect to the previous case and the increasing trend is not as clear as before.
+
+
+\paragraph{Displacement along the bar}
+
+Another interesting metrics to analyze is the displacement along the bar at different times.
+
+In particular, from Figures \ref{fig:displacement_F0} \& \ref{fig:displacement_F1000} we can observe the displacement of the structure node of the bar at $7$ different times with different loads applied.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/displacement_F0.png}
+    \caption{Displacement of the nodes at different times when $F_{initial} = 0 kN$}
+    \label{fig:displacement_F0}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/displacement_F1000.png}
+    \caption{Displacement of the nodes at different times when $F_{initial} = 1000 kN$}
+    \label{fig:displacement_F1000}
+\end{figure}
+
+Also from these plots, we can observe the different behavior of the system when different loads are applied.
+
+In case of $F_{initial} = 0 kN$, the displacement is almost linear both in time and in space (displacement lines increase linearly from left to right and from bottom to top).
+
+In case of $F_{initial} = 1000 kN$, the displacement is not linear neither in time nor in space (displacement lines at different times intersects each other which means that the displacement of a given node is not monotonically increasing with time even if the applied load is unidirectional).
+This behavior can be explained by the combination of the inertia of the system and the discontinuity in the applied load (wave propagation phenomenon).
+
 
 \input{src/05.1 - parallelism_with_the_mass_spring_system}

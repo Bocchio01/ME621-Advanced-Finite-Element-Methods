@@ -1,0 +1,23 @@
+\section{Methodology}
+\label{sec:methodology}
+
+To solve the given problem, we will use a similar approach adopted in the previous assignment.
+The main differences are:
+
+\begin{itemize}
+    \item Adoption of the \textbf{Updated Lagrangian Formulation} instead of the Total Lagrangian Formulation.
+    \item Different constitutive model (Truesdell objective rate).
+    \item 2D problem instead of 1D.
+\end{itemize}
+
+As for the code implementation, a skeleton of the code may be summarized as follows:
+
+\begin{enumerate}
+    \item Definition of parameters for the problem (material properties, geometry of the plate, boundary conditions\dots).
+    \item Mesh generator for the 2D plate (domain discretization, node numbering and connectivity dictionary).
+    \item Explicit integration scheme with Updated Lagrangian Formulation.
+    \item Plotting and post-processing of the results.
+\end{enumerate}
+
+\textbf{Note:} given the advice from the professor in the last lecture, for this assignment we have changed a bit the structure and the way of do things, so to rely less on the \texttt{MATLAB} built-in functions and more on the custom implementation of the code.
+This will allow us to have a better understanding of the underlying mechanics of the problem and the numerical methods used to solve it.

@@ -1,0 +1,135 @@
+\subsection{Elemental matrices (for a 4-node rectangular element)}
+\label{subsec:elemental_matrices}
+
+Similar to what we have done in previous assignments, we will now compute the elemental matrices for the problem at hand.
+
+The major difference in this case is that we are dealing with a 2D problem.
+In order to work with some higher order tensorial quantities (i.e. tensor of order 4), we will need to use the voigt notation which allows us to represent a tensor of order 4 as a tensor of order 2 (easily manageable from a coding perspective).
+
+
+
+\subsubsection{Shape functions}
+\label{subsubsec:shape_functions}
+
+The first step is to compute the shape functions for the problem at hand and in particular for the element we are considering.
+
+Given that we are working with a rectangular-4-node element, we can use a simple \texttt{Mathematica} script to compute the shape functions:
+
+\lstinputlisting[
+    style=mathematica,
+    language=Mathematica,
+    caption=Mathematica script to compute the shape functions for a rectangular-4-node element.
+]{files/notebook.txt}
+
+The script above will generate the following shape functions:
+
+\begin{equation}
+    \begin{aligned}
+        N_1 & = \frac{1}{4} (1 - \xi) (1 - \eta) \\
+        N_2 & = \frac{1}{4} (1 + \xi) (1 - \eta) \\
+        N_3 & = \frac{1}{4} (1 + \xi) (1 + \eta) \\
+        N_4 & = \frac{1}{4} (1 - \xi) (1 + \eta)
+    \end{aligned}
+\end{equation}
+
+Notice that the shape functions are defined in terms of the natural coordinates $\xi$ and $\eta$, and also notice that the index of the shape function corresponds to the elemental node number (counterclockwise starting from the bottom left corner).
+
+Our shape functions can be represented in matrix form as well as using voigt notation:
+
+\begin{equation}
+    N_{matrix} = [N_1, N_2, N_3, N_4]
+\end{equation}
+
+\begin{equation}
+    N_{voigt} = \begin{bmatrix}
+        N_1 & 0   & N_2 & 0   & N_3 & 0   & N_4 & 0   \\
+        0   & N_1 & 0   & N_2 & 0   & N_3 & 0   & N_4
+    \end{bmatrix}
+\end{equation}
+
+
+
+\subsubsection{Compatibility matrix}
+\label{subsubsec:compatibility_matrix}
+
+Having the shape functions at hand, we can now compute the compatibility matrix $B$.
+From its definition, we have that:
+
+\begin{equation}
+    B = \frac{\partial N}{\partial \vec{x}} = \frac{\partial N}{\partial \vec{\xi}} \frac{\partial \vec{\xi}}{\partial \vec{x}}, \quad \text{where} \quad \vec{\xi} = \begin{bmatrix} \xi \\ \eta \end{bmatrix}
+    \label{eq:compatibility_matrix}
+\end{equation}
+
+By using the chain rule, we have decomposed the compatibility matrix into two parts: the derivative of the shape functions with respect to the natural coordinates $\vec{\xi}$ and the Jacobian matrix $\frac{\partial \vec{\xi}}{\partial \vec{x}}$.
+We can proceed by computing the two parts separately.
+
+The derivative of the shape functions with respect to the natural coordinates is given by:
+
+\begin{equation}
+    \frac{\partial N}{\partial \vec{\xi}} = \begin{bmatrix}
+        \frac{\partial N_1}{\partial \xi}  & \frac{\partial N_2}{\partial \xi}  & \frac{\partial N_3}{\partial \xi}  & \frac{\partial N_4}{\partial \xi}  \\
+        \frac{\partial N_1}{\partial \eta} & \frac{\partial N_2}{\partial \eta} & \frac{\partial N_3}{\partial \eta} & \frac{\partial N_4}{\partial \eta}
+    \end{bmatrix} = \frac{1}{4} \begin{bmatrix}
+        - (1 - \eta) & (1 - \eta)  & (1 + \eta) & - (1 + \eta) \\
+        - (1 - \xi)  & - (1 + \xi) & (1 + \xi)  & (1 - \xi)
+    \end{bmatrix}
+    \label{eq:shape_functions_derivative}
+\end{equation}
+
+The Jacobian matrix is given by:
+
+\begin{equation}
+    \frac{\partial \vec{\xi}}{\partial \vec{x}} = \begin{bmatrix}
+        \frac{\partial \xi}{\partial x}  & \frac{\partial \xi}{\partial y}  \\
+        \frac{\partial \eta}{\partial x} & \frac{\partial \eta}{\partial y}
+    \end{bmatrix}
+\end{equation}
+
+Given that we can represent $\vec{x}$ in terms of the shape functions and the nodal coordinates, we can write:
+
+\begin{equation}
+    \frac{\partial \vec{\xi}}{\partial \vec{x}} = \begin{bmatrix}
+        x_1 & x_2 & x_3 & x_4 \\
+        y_1 & y_2 & y_3 & y_4
+    \end{bmatrix} \frac{1}{4} \begin{bmatrix}
+        - (1 - \eta) & (1 - \eta)  & (1 + \eta) & - (1 + \eta) \\
+        - (1 - \xi)  & - (1 + \xi) & (1 + \xi)  & (1 - \xi)
+    \end{bmatrix}^T
+    \label{eq:jacobian_matrix}
+\end{equation}
+
+By using Equations \ref{eq:shape_functions_derivative} and \ref{eq:jacobian_matrix} in Equation \ref{eq:compatibility_matrix}, we can compute the compatibility matrix $B$ in matrix form as well as in voigt notation:
+
+\begin{equation}
+    B_{matrix} = \begin{bmatrix}
+        \frac{\partial N_1}{\partial x} & \frac{\partial N_2}{\partial x} & \frac{\partial N_3}{\partial x} & \frac{\partial N_4}{\partial x} \\
+        \frac{\partial N_1}{\partial y} & \frac{\partial N_2}{\partial y} & \frac{\partial N_3}{\partial y} & \frac{\partial N_4}{\partial y}
+    \end{bmatrix}
+\end{equation}
+
+\begin{equation}
+    B_{voigt} = \begin{bmatrix}
+        \frac{\partial N_1}{\partial x} & 0                               & \frac{\partial N_2}{\partial x} & 0                               & \frac{\partial N_3}{\partial x} & 0                               & \frac{\partial N_4}{\partial x} & 0                               \\
+        0                               & \frac{\partial N_1}{\partial y} & 0                               & \frac{\partial N_2}{\partial y} & 0                               & \frac{\partial N_3}{\partial y} & 0                               & \frac{\partial N_4}{\partial y} \\
+        \frac{\partial N_1}{\partial y} & \frac{\partial N_1}{\partial x} & \frac{\partial N_2}{\partial y} & \frac{\partial N_2}{\partial x} & \frac{\partial N_3}{\partial y} & \frac{\partial N_3}{\partial x} & \frac{\partial N_4}{\partial y} & \frac{\partial N_4}{\partial x}
+    \end{bmatrix}
+\end{equation}
+
+
+
+\subsubsection{Forces and mass matrix}
+\label{subsubsec:forces_and_mass_matrix}
+
+The forces and mass matrix can be computed similarly to what we have done in previous assignments (see Assignment 2, Section 3.2) even if we are now working in the \textit{Updated Lagrangian} framework.
+For this reason we will not go into the details of the computation and, instead, we will provide just the final results\footnotemark[1]:
+
+\begin{align}
+    f_{int}^e & = \int_{\Omega} B^{eT} \sigma d\Omega    \approx  \sum_{\xi = -1}^{+1} \sum_{\eta = -1}^{+1} w_{\xi} w_{\eta} B(\xi, \eta, u)^{eT} \sigma(\xi, \eta, u) J(\xi, \eta, u) \\
+    f_{ext}^e & = \int_{\Omega} N^{eT} \rho b d\Omega         \approx  \sum_{\xi = -1}^{+1} \sum_{\eta = -1}^{+1} w_{\xi} w_{\eta} N(\xi, \eta)^{eT} \rho b J(\xi, \eta, u)             \\
+    M^e       & = \int_{\Omega} N^{eT} \rho N^e d\Omega \approx \sum_{\xi = -1}^{+1} \sum_{\eta = -1}^{+1} w_{\xi} w_{\eta} N(\xi, \eta)^{eT} \rho N(\xi, \eta)^{eT} J(\xi, \eta, u)
+\end{align}
+
+Notice that the approximations of the integrals are done using a Gauss quadrature rule with a given number of point for each direction.
+In our solution, we have chosen to use a 3-point rule in both directions.
+
+\footnotetext[1]{In the formulation of $f_{ext}^e$, we have neglected the contribution of any traction applied to the boundary or any other point force given that for our problem they are not present.}

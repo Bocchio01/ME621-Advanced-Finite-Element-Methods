@@ -1,0 +1,21 @@
+Clear["Global`*"]
+
+Displachment=coef0+coef1*\[Xi]+coef2*\[Eta]+coef3*\[Xi]*\[Eta];
+
+Equation1=Displachment/.{\[Xi]->-1,\[Eta]->-1};
+Equation2=Displachment/.{\[Xi]->+1,\[Eta]->-1};
+Equation3=Displachment/.{\[Xi]->+1,\[Eta]->+1};
+Equation4=Displachment/.{\[Xi]->-1,\[Eta]->+1};
+
+sol=Solve[
+{Equation1==u1,Equation2==u2,Equation3==u3,Equation4==u4},
+{coef0,coef1,coef2,coef3}
+];
+{coef0,coef1,coef2,coef3} = {coef0,coef1,coef2,coef3}/.sol[[1]];
+
+N1=Coefficient[Displachment,u1];
+N2=Coefficient[Displachment,u2];
+N3=Coefficient[Displachment,u3];
+N4=Coefficient[Displachment,u4];
+
+NShapeFunctions = {N1, N2, N3, N4};

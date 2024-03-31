@@ -33,7 +33,7 @@ With this perspective, our rod can be seen as a series of mass points connected 
         \foreach \x in {0, 1, ..., 4}
             {
                 \draw[spring] (2*\x-0.2, 0) -- ++(2-0.6, 0);
-                \node[below] at (2*\x+0.5, 0) {$\the\numexpr\x+1\relax$};
+                \node[below] at (2*\x+0.5, -0.2) {$\the\numexpr\x+1\relax$};
             }
 
         \foreach \x in {0, 1, ..., 3}

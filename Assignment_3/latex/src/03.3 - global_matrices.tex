@@ -1,0 +1,7 @@
+\subsection{Global matrices}
+\label{subsec:global_matrices}
+
+Global matrices are obtained by assembling the elemental matrices based on the \texttt{connectivity matrix} generated during the mesh generation phase.
+
+In particular, given that $f_{int}^e$, $f_{ext}^e$, $M^e$ have been computed using voigt notation, we can assemble the global matrices knowing that each row and columns of the global matrices correspond to a particular degrees of freedom of the system.
+By summing for each element the contribution of the elemental matrices to the corresponding positions of the global matrices, we obtain the global matrices.

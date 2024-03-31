@@ -3,3 +3,4 @@ mathematica
 Newton-Raphson
 Jacobian
 diagonalized
+voigt

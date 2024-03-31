@@ -1,0 +1,88 @@
+\section{Flow Charts}
+\label{appendix:flowcharts}
+
+The following flow chart mimics the structure of the MATLAB code used to solve the problem.
+
+The code is structured in two nested loops: the main loop (\textbf{Explicit Time Integration Algorithm}) and the inner loop (\textbf{Stress Update Algorithm}).
+
+The Explicit Time Integration Algorithm is the main loop that iterates until the convergence criterion is met.
+Inside the main loop, the Stress Update Algorithm is called to update the stress state of each element (at each integration point).
+
+\begin{figure}[H]
+    \centering
+
+    \begin{tikzpicture}[node distance=2cm]
+        % Nodes
+        \node (start) [startstop] {Start};
+        \node (init) [process, below of=start] {Initialize variables};
+        \node (mesh) [process, below of=init] {Generate mesh};
+
+        \node (while) [decision, below of=mesh, yshift=-0.5cm] {While $\gamma < 0.07$};
+        \node (stress) [process, below of=while, yshift=-0.5cm] {Stress update algorithm};
+        \node (acceleration) [process, below of=stress] {Compute acceleration};
+        \node (velocities) [process, below of=acceleration] {Compute nodal velocities};
+        \node (enforce1) [process, below of=velocities] {Set boundary conditions for velocities};
+        \node (update1) [process, below of=enforce1] {Compute and update nodal displacements};
+        \node (enforce2) [process, below of=update1] {Set boundary conditions for displacements};
+        \node (stop) [startstop, left of=stress, xshift=-3cm] {Stop};
+
+        % Arrows
+        \draw [arrow] (start) -- (init);
+        \draw [arrow] (init) -- (mesh);
+        \draw [arrow] (mesh) -- (while);
+        \draw [arrow] (while) -- node[anchor=west] {True} (stress);
+        \draw [arrow] (stress) -- (acceleration);
+        \draw [arrow] (acceleration) -- (velocities);
+        \draw [arrow] (velocities) -- (enforce1);
+        \draw [arrow] (enforce1) -- (update1);
+        \draw [arrow] (update1) -- (enforce2);
+        \draw [arrow] (enforce2) -- +(3,0) |- (while.east) node[pos=0.25, above, rotate=-90] {Repeat};
+
+        \draw [arrow] (while.west) -| node[pos=0.25, above] {False} (stop);
+    \end{tikzpicture}
+
+    \caption{
+        Flowchart for the \textbf{Explicit Time Integration Algorithm}.
+        The convergence criterion $\gamma < 0.07$ is relative to the given problem, while the rest of the algorithm is general.
+    }
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+
+    \begin{tikzpicture}[node distance=2cm]
+        % Nodes
+        \node (start) [startstop] {From main loop};
+        \node (elementloop) [decision, below of=start, align=center, yshift=-0.3cm] {For each \\ element};
+        \node (gather) [process, below of=elementloop, yshift=-0.3cm] {Gather nodal displacements \& velocities};
+
+        \node (integrationloop) [decision, below of=gather, align=center, yshift=-0.5cm] {For each \\ Guass point};
+        \node (computematrices) [process, below of=integrationloop, yshift=-0.5cm] {Compute $B(\vec{\xi})$, $L(\vec{\xi})$ \& $D(\vec{\xi})$};
+        \node (compute) [process, below of=computematrices] {Compute $\dot{\sigma}$};
+        \node (update) [process, below of=compute] {Update $\sigma$};
+        \node (sumforces) [process, below of=update] {Update elemental forces};
+
+        \node (scatter) [process, below of=sumforces] {Assemble elemental forces};
+        \node (stop) [startstop, below of=scatter] {Back to main loop};
+
+        % Arrows
+        \draw [arrow] (start) -- (elementloop);
+        \draw [arrow] (elementloop) -- (gather);
+        \draw [arrow] (gather) -- (integrationloop);
+        \draw [arrow] (integrationloop) -- (computematrices);
+        \draw [arrow] (computematrices) -- (compute);
+        \draw [arrow] (compute) -- (update);
+        \draw [arrow] (update) -- (sumforces);
+        \draw [arrow] (sumforces) -- (scatter);
+        \draw [arrow] (sumforces) -- +(3,0) |- (integrationloop.east) node[pos=0.25, above, rotate=-90] {Next integration point};
+        \draw [arrow] (scatter) -- (stop);
+        \draw [arrow] (scatter) -- +(4,0) |- (elementloop.east) node[pos=0.25, above, rotate=-90] {Next element of the mesh};
+
+    \end{tikzpicture}
+
+    \caption{
+        Flowchart for the \textbf{Stress Update Algorithm}.
+        The decision blocks in this case represent for loops over the elements and the integration points.
+    }
+\end{figure}
