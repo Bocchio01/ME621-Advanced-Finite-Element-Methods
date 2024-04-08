@@ -1,0 +1,22 @@
+\subsection{Radial Return Algorithm}
+\label{subsec:radial_return_algorithm}
+
+The radial return algorithm is a method used to update the stress tensor in the plastic regime.
+
+The algorithm is based on the assumption that the stress tensor is always on the yield surface, and the plastic strain is always normal to the yield surface.
+
+The algorithm can be summarized in the following steps:
+
+\begin{enumerate}
+    \item Compute the trial stress tensor $\boldsymbol{\sigma}^{\text{trial}}$ using the constitutive model for the elastic regime.
+    \item Compute the trial deviatoric stress tensor $\boldsymbol{s}^{\text{trial}}$.
+    \item Compute the trial yield function $f^{\text{trial}}$.
+    \item If $f^{\text{trial}} \leq 0$, the stress tensor is already on the yield surface, and the algorithm can proceed to the next step.
+    \item If $f^{\text{trial}} > 0$, the stress tensor is outside the yield surface, and the algorithm needs to be corrected.
+    \item Compute the plastic multiplier $\lambda$.
+    \item Update the stress tensor using the plastic multiplier.
+    \item Update the plastic strain tensor.
+    \item Update the back stress tensor.
+    \item Update the hardening variable.
+    \item Update the stress tensor using the updated hardening variable.
+\end{enumerate}
