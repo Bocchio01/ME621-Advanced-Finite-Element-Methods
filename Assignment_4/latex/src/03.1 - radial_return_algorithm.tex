@@ -1,22 +1,116 @@
 \subsection{Radial Return Algorithm}
 \label{subsec:radial_return_algorithm}
 
-The radial return algorithm is a method used to update the stress tensor in the plastic regime.
+The radial return algorithm is a method used to determine the plastic strain increment in a material subjected to a stress state that is outside the yield surface.
 
-The algorithm is based on the assumption that the stress tensor is always on the yield surface, and the plastic strain is always normal to the yield surface.
+The base assumption is that the stress state of a material must always be contained within the yield surface (or alternatively, its effective stress must be less or equal to the yield strength).
+From here, two cases can be distinguished:
 
-The algorithm can be summarized in the following steps:
+\begin{itemize}
+    \item Effective stress is less than the yield strength: the material is in the elastic regime and the plastic components of the strain are zero.
+    \item Effective stress is greater than the yield strength: the material is in the plastic regime and the plastic components of the strain must be determined using the radial return algorithm in order to satisfy the yield condition.
+\end{itemize}
+
+
+\subsubsection{First steps of the algorithm \& material considerations}
+
+Before diving into the core of the radial return algorithm, we need to introduce some preliminary concepts and considerations.
+
+At first, we need to evaluate the trial stress tensor $\sigma_{trial} = C : \varepsilon$, where $C$ is the stiffness tensor and $\varepsilon$ is the strain tensor (supposed at this point to be purely elastic $\varepsilon = \varepsilon_e$).
+
+Then we check whether the trial stress tensor is inside the yield surface or not.
+In general, different criteria can be chosen to define the yield surface (or yield strength), but the most common is the von Mises yield criterion.
+Based on the von Mises criteria, the yield strength can be computed as:
+
+\begin{equation}
+    S_y = \sqrt{\frac{1}{2} [(\sigma_{11} - \sigma_{22})^2 + (\sigma_{22} - \sigma_{33})^2 + (\sigma_{33} - \sigma_{11})^2 + 6 (\sigma_{12}^2 + \sigma_{23}^2 + \sigma_{31}^2)]}
+\end{equation}
+
+Moreover, the von Mises yield criterion can be expressed starting from the deviatoric stress tensor $S$, which represent the shape deformation of the material (volume deformation is represented by the hydrostatic stress tensor $P$).
+Given a generic stress tensor $\sigma$, the deviatoric stress tensor $S$ can be computed as:
+
+\begin{equation}
+    S = \sigma - P = \sigma - \frac{1}{3} \text{trace}(\sigma) I
+\end{equation}
+
+The yield surface of the current stress state, based on the von Mises criterion, can then be expressed as:
+
+\begin{equation}
+    f(\sigma) = \sqrt{\frac{3}{2} S : S}
+    \label{eq:yield_surface}
+\end{equation}
+
+where $:$ is the double contraction product between two tensors (i.e. $A : B = \sum_{i}\sum_{j} A_{ij} \times B_{ij}$).
+Of course, given that the deviatoric stress tensor is a second order tensor, the result of the double contraction product $S : S$ is a scalar.
+
+To check whether the trial stress tensor is inside the yield surface, we can define a $\Phi$ function as:
+
+\begin{equation}
+    \Phi(\sigma) = f(\sigma) - \bar{\sigma}(\bar{\varepsilon_p})
+\end{equation}
+
+where $\bar{\sigma}(\bar{\varepsilon_p})$ is the hardening function that describe the behavior of the material in the plastic regime.
+In particular we know that, in general, in the plastic regime the material undergoes hardening, which means that the yield strength increases with the plastic strain.
+There exist many model of the hardening function, but the most common are:
+
+\begin{itemize}
+    \item Linear hardening: $\bar{\sigma}(\bar{\varepsilon_p}) = S_{y0} + H \bar{\varepsilon_p}$
+    \item Exponential hardening: $\bar{\sigma}(\bar{\varepsilon_p}) = S_{y0} + (S_{yf} - S_{y0}) (1 - e^{-k \bar{\varepsilon_p}})$
+    \item Power hardening: $\bar{\sigma}(\bar{\varepsilon_p}) = S_{y0} + H \bar{\varepsilon_p}^n$
+          % \item Or any combination of the above
+\end{itemize}
+
+Notice that $\bar{\sigma}(\bar{\varepsilon_p})$ is known as the flow stress (or flow rule considering the function it self), while the hardening variable $\bar{\varepsilon_p}$ is known as the effective plastic strain and can be computed starting from the plastic strain tensor $\varepsilon_p$ as:
+
+\begin{equation}
+    \bar{\varepsilon_p} = \sqrt{\frac{2}{3} \varepsilon_p : \varepsilon_p}
+\end{equation}
+
+If $\Phi(\sigma, \bar{\varepsilon_p}) \le 0$, the material is in the elastic regime and $\varepsilon_p = 0$ \& $\sigma = \sigma_{trial}$, being the stress tensor still inside the yield surface.
+
+If, increasing the stress state, $\Phi(\sigma, \bar{\varepsilon_p}) \geq 0$, the material is in the plastic regime and the radial return algorithm must be applied to compute the elastic and plastic components of the strain tensor and update the stress tensor considering only the elastic component.
+
+
+% Graphically, the radial return can be represented similarly to a minimization problem, where the chosen direction is the one that minimize the distance between the trial stress tensor and the yield surface.
+
+\subsubsection{Radial return core algorithm}
+
+In the latter case of the two above, we need to evaluate $\varepsilon_p$ using an iterative algorithm, given that a change of $\varepsilon_p$ will change both the stress tensor ($\sigma = C : (\varepsilon - \varepsilon_p)$) and the yield surface (Equation \ref{eq:yield_surface}).
+
+The exact value of $\varepsilon_p$, correspond to the zero of the $\Phi$ function.
+
+The core block of the radial return algorithm is essentially similar to a Newton-Raphson algorithm, where the unknown is the plastic strain $\varepsilon_p$ and the function to minimize is $\Phi(\sigma, \bar{\varepsilon_p})$.
+
+In particular, by using a while loop, we can iterate the following steps:
 
 \begin{enumerate}
-    \item Compute the trial stress tensor $\boldsymbol{\sigma}^{\text{trial}}$ using the constitutive model for the elastic regime.
-    \item Compute the trial deviatoric stress tensor $\boldsymbol{s}^{\text{trial}}$.
-    \item Compute the trial yield function $f^{\text{trial}}$.
-    \item If $f^{\text{trial}} \leq 0$, the stress tensor is already on the yield surface, and the algorithm can proceed to the next step.
-    \item If $f^{\text{trial}} > 0$, the stress tensor is outside the yield surface, and the algorithm needs to be corrected.
-    \item Compute the plastic multiplier $\lambda$.
-    \item Update the stress tensor using the plastic multiplier.
-    \item Update the plastic strain tensor.
-    \item Update the back stress tensor.
-    \item Update the hardening variable.
-    \item Update the stress tensor using the updated hardening variable.
+    \item Compute $G$ (tangent modulus) and $\frac{\partial \bar{\sigma}}{\partial \bar{\varepsilon_p}}$, evaluated at the current $\bar{\varepsilon_p}$.
+    \item Compute the direction of the plastic strain increment $n = \frac{\partial f}{\partial \sigma}$
+    \item Compute $\lambda = \frac{\Phi(\sigma, \bar{\varepsilon_p})}{n : C : n + \frac{\partial \bar{\sigma}}{\partial \bar{\varepsilon_p}}}$
+    \item Update $\sigma = \sigma - \lambda C : n$
+    \item Update $\bar{\varepsilon_p} = \bar{\varepsilon_p} + \lambda$
+    \item Check if $\Phi(\sigma, \bar{\varepsilon_p}) \le \delta$, if not repeat from step 1.
 \end{enumerate}
+
+The algorithm will converge to the exact value of $\varepsilon_p$ that satisfy the yield condition, and the stress tensor will be correctly updated considering only the elastic component of the strain tensor.
+
+
+\subsubsection{Adaptation to the problem at hand}
+
+Given the hardening law $\bar{\sigma}(\bar{\varepsilon_p}) = 200MPa + 325MPa \times \bar{\varepsilon_p}^{0.125}$, we can compute its derivative with respect to $\bar{\varepsilon_p}$ as:
+
+\begin{equation}
+    \frac{\partial \bar{\sigma}}{\partial \bar{\varepsilon_p}} = 325MPa \times 0.125 \times \bar{\varepsilon_p}^{0.125-1}
+\end{equation}
+
+Moreover, we are going to adopt the von Mises criteria.
+Because of that, quantities such as $\lambda$ and $n$ can be further specified.
+
+\begin{equation}
+    n = \frac{\partial f}{\partial \sigma} = \frac{3}{2} \frac{S}{f} = \sqrt{\frac{3}{2}} \frac{S}{\sqrt{S : S}}
+\end{equation}
+
+\begin{equation}
+    \lambda = \frac{\Phi(\sigma, \bar{\varepsilon_p})}{n : C : n + \frac{\partial \bar{\sigma}}{\partial \bar{\varepsilon_p}}} = \frac{\Phi(\sigma, \bar{\varepsilon_p})}{3G + \frac{\partial \bar{\sigma}}{\partial \bar{\varepsilon_p}}}
+\end{equation}
+

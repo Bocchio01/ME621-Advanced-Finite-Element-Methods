@@ -19,7 +19,7 @@ data = struct( ...
     'rho', 2700, ...
     'E', 70e+9, ...
     'nu', 0.3, ...
-    'vx_top', 1);
+    'vx_top', 0.001);
 
 fem = struct( ...
     'N_nodes_element', 4, ...
@@ -27,9 +27,11 @@ fem = struct( ...
     'N_DOF', NaN, ...
     'Nx', 1, ...
     'Ny', 1, ...
-    'constitutive_model', "Trusdell");
+    'constitutive_model', "Cauchy");
 
-output = struct('plots', true);
+output = struct( ...
+    'plots', true, ...
+    'movie', false);
 
 %% Mesh generation
 
@@ -57,74 +59,82 @@ boundary = struct( ...
 clear idx_nodes_bottom idx_nodes_top initial_coordinates
 
 
-%% Solver structure definitions
+%% Funcs structure definitions
 
-solver = struct( ...
-    'dt', zeros(1), ...
-    'global', struct(), ...
+funcs = struct( ...
     'integration', struct(), ...
-    'element', struct(), ...
     'mat', struct(), ...
-    'vgt', struct());
+    'vgt', struct(), ...
+    'plastic', struct());
 
-% solver.global
+% funcs.integration
+funcs.integration.weights = [5/9, 8/9, 5/9];
+funcs.integration.roots   = [-sqrt(3/5), 0, sqrt(3/5)];
+% funcs.integration.weights = [2];
+% funcs.integration.roots   = [0];
+
+% funcs.mat
+funcs.mat.N      = @(Xi, Eta)    1/4 * [(1-Xi)*(1-Eta), (1+Xi)*(1-Eta), (1+Xi)*(1+Eta), (1-Xi)*(1+Eta)];
+funcs.mat.dN     = @(Xi, Eta)    1/4 * [-1+Eta, 1-Eta, 1+Eta, -1-Eta; -1+Xi, -1-Xi, 1+Xi, 1-Xi];
+funcs.mat.F      = @(Xi, Eta, u) u * funcs.mat.dN(Xi, Eta)';
+funcs.mat.J      = @(Xi, Eta, u) det(funcs.mat.F(Xi, Eta, u));
+funcs.mat.B      = @(Xi, Eta, u) inv(funcs.mat.F(Xi, Eta, u))' * funcs.mat.dN(Xi, Eta);
+funcs.mat.stress = @(vgt_stress) vgt_stress_to_mat(vgt_stress);
+funcs.mat.strain = @(vgt_strain) vgt_strain_to_mat(vgt_strain);
+
+% funcs.vgt
+funcs.vgt.N      = @(N)          mat_N_to_vgt(N, fem.N_DOF_node);
+funcs.vgt.B      = @(B)          mat_B_to_vgt(B, fem.N_nodes_element, fem.N_DOF_node);
+funcs.vgt.stress = @(mat_stress) mat_stress_to_vgt(mat_stress);
+funcs.vgt.strain = @(mat_strain) mat_strain_to_vgt(mat_strain);
+funcs.vgt.C      = @(E, nu)      E / (1-nu^2) * [1, nu, 0; nu, 1, 0; 0, 0, (1-nu)/2]; % Plane stress model
+
+% funcs.plastic
+funcs.plastic.Sy           = @(S)               sqrt(3/2 * sum(S .* S, 'all'));
+funcs.plastic.hardening    = @(strain_p_bar)    200e6 + 325e6 * (strain_p_bar)^0.125;
+funcs.plastic.strain_p_bar = @(mat_strain_p)    sqrt(2/3 * sum(mat_strain_p .* mat_strain_p, 'all'));
+funcs.plastic.mat_strain_p = @(S, strain_p_bar) 3/2 * strain_p_bar / funcs.plastic.Sy(S) * S;
+funcs.plastic.mat_n        = @(S)               3/2 * S / funcs.plastic.Sy(S);
+funcs.plastic.phi          = @(S, strain_p_bar) funcs.plastic.Sy(S) - funcs.plastic.hardening(strain_p_bar);
+
+
+%% States initialization
+
+states = struct( ...
+    'dt', [5e-1], ...
+    'global', struct(), ...
+    'element', struct(), ...
+    'plastic', struct(), ...
+    'targets', struct());
+
+% states.global
 % Here we just initialize the vectors of position and velocities
 % Boundary condition are not applied yet
-solver.global.u(:, 1)      = reshape(mesh.coordinates.', 1, [])';
-solver.global.v_half(:, 1) = zeros(fem.N_DOF, 1);
+states.global.u(:, 1)      = reshape(mesh.coordinates.', 1, [])';
+states.global.v_half(:, 1) = zeros(fem.N_DOF, 1);
 
-% solver.integration
-solver.integration.weights = [5/9, 8/9, 5/9];
-solver.integration.roots   = [-sqrt(3/5), 0, sqrt(3/5)];
-% solver.integration.weights = [2];
-% solver.integration.roots   = [0];
-
-% solver.element
-% Other fields of this struct will be populated directly inside the main loop cycle
-solver.element.stress = zeros( ...
-    size(mesh.connectivity, 1), ...
-    length(solver.integration.roots), ...
-    length(solver.integration.roots), ...
-    3);
-
-% solver.mat
-solver.mat.N      = @(Xi, Eta)    1/4 * [(1-Xi)*(1-Eta), (1+Xi)*(1-Eta), (1+Xi)*(1+Eta), (1-Xi)*(1+Eta)];
-solver.mat.dN     = @(Xi, Eta)    1/4 * [-1+Eta, 1-Eta, 1+Eta, -1-Eta; -1+Xi, -1-Xi, 1+Xi, 1-Xi];
-solver.mat.F      = @(Xi, Eta, u) u * solver.mat.dN(Xi, Eta)';
-solver.mat.J      = @(Xi, Eta, u) det(solver.mat.F(Xi, Eta, u));
-solver.mat.B      = @(Xi, Eta, u) inv(solver.mat.F(Xi, Eta, u))' * solver.mat.dN(Xi, Eta);
-solver.mat.stress = @(vgt_stress) vgt_stress_to_mat(vgt_stress);
-solver.mat.strain = @(vgt_strain) vgt_strain_to_mat(vgt_strain);
-
-% solver.vgt
-solver.vgt.N      = @(N)          mat_N_to_vgt(N, fem.N_DOF_node);
-solver.vgt.B      = @(B)          mat_B_to_vgt(B, fem.N_nodes_element, fem.N_DOF_node);
-solver.vgt.stress = @(mat_stress) mat_stress_to_vgt(mat_stress);
-solver.vgt.strain = @(mat_strain) mat_strain_to_vgt(mat_strain);
-solver.vgt.C      = @(E, nu)      E / (1-nu^2) * [1, nu, 0; nu, 1, 0; 0, 0, (1-nu)/2]; % Plane stress model
-
-solver.vgt.M = zeros(fem.N_DOF, fem.N_DOF);
+states.global.M = zeros(fem.N_DOF, fem.N_DOF);
 M = zeros(fem.N_DOF_node * fem.N_nodes_element);
 
 % Here element are the same in initial configuration and we can compute one single element mass matrix knowing
 % that it will be the same for all the elements
-for i = 1:length(solver.integration.roots)
-    for j = 1:length(solver.integration.roots)
+for i = 1:length(funcs.integration.roots)
+    for j = 1:length(funcs.integration.roots)
         
         % Variables for the loop
         idx_nodes = reshape((2 * mesh.connectivity(1, :).' + [-1, 0])', 1, []);
-        u = reshape(solver.global.u(idx_nodes, 1), [fem.N_DOF_node, fem.N_nodes_element]);
+        u = reshape(states.global.u(idx_nodes, 1), [fem.N_DOF_node, fem.N_nodes_element]);
         
-        Xi = solver.integration.roots(i);
-        Eta = solver.integration.roots(j);
-        weight_Xi = solver.integration.weights(i);
-        weight_Eta = solver.integration.weights(j);
+        Xi = funcs.integration.roots(i);
+        Eta = funcs.integration.roots(j);
+        weight_Xi = funcs.integration.weights(i);
+        weight_Eta = funcs.integration.weights(j);
         
-        N = solver.mat.N(Xi, Eta);
-        J = solver.mat.J(Xi, Eta, u);
+        N = funcs.mat.N(Xi, Eta);
+        J = funcs.mat.J(Xi, Eta, u);
         
         % Loop body
-        M = M + weight_Xi * weight_Eta * data.rho * solver.vgt.N(N)' * solver.vgt.N(N) * J;
+        M = M + weight_Xi * weight_Eta * data.rho * funcs.vgt.N(N)' * funcs.vgt.N(N) * J;
         
     end
 end
@@ -132,256 +142,231 @@ end
 for element_idx = 1:size(mesh.connectivity, 1)
     
     idx_nodes = reshape((2 * mesh.connectivity(element_idx, :).' + [-1, 0])', 1, []);
-    solver.vgt.M(idx_nodes, idx_nodes) = solver.vgt.M(idx_nodes, idx_nodes) + M;
+    states.global.M(idx_nodes, idx_nodes) = states.global.M(idx_nodes, idx_nodes) + M;
     
 end
 
-solver.vgt.M = diag(sum(solver.vgt.M, 2));
+states.global.M = diag(sum(states.global.M, 2));
+
+% states.element
+% Other fields of this struct will be populated directly inside the main loop cycle
+states.element.stress = zeros( ...
+    size(mesh.connectivity, 1), ...
+    length(funcs.integration.roots), ...
+    length(funcs.integration.roots), ...
+    3);
+
+% states.plastic
+states.plastic.strain_p_bar = zeros(size(mesh.connectivity, 1), 1);
+
+% states.targets
+% Any variable that require to be stored for each iteration of the main
+% lood will be saved in this struct
+states.targets.sigma12 = [0];
+states.targets.gamma = [0];
+
 
 clear i j element_idx
 clear idx_nodes u Xi Eta weight_Xi weight_Eta N J M
 
 
-%% Plasticity model
-
-plasticity = struct();
-
-plasticity.Sy           = @(S)               sqrt(3/2 * sum(S .* S, 'all'));
-% plasticity.hardening    = @(strain_p_bar)    200e6 + 325e6 * (strain_p_bar);
-plasticity.hardening    = @(strain_p_bar)    200e6 + 325e6 * (strain_p_bar)^0.125;
-plasticity.strain_p_bar = @(mat_strain_p)    sqrt(2/3 * sum(mat_strain_p .* mat_strain_p, 'all'));
-plasticity.mat_strain_p = @(S, strain_p_bar) 3/2 * strain_p_bar / plasticity.Sy(S) * S;
-plasticity.n_direction  = @(S)               3/2 * S / plasticity.Sy(S);
-
-plasticity.phi          = @(S, strain_p_bar) plasticity.Sy(S) - plasticity.hardening(strain_p_bar);
-
 %% Main loop
-
-plotting_struct = struct( ...
-    'sigma12', [0], ...
-    'gamma', [0]);
 
 n = 1;
 t = 0;
-C = solver.vgt.C(data.E, data.nu);
-
-gamma(n) = [0];
-solver.dt(n) = 5e-4;
+C = funcs.vgt.C(data.E, data.nu);
+dh = 10e-1;
 
 tic
-while (gamma(n) < 1)
+while (states.targets.gamma(n) < 1)
     
-    solver.global.f(:, n) = zeros(fem.N_DOF, 1);
-    dt_critical = +inf;
+    states.global.f(:, n) = zeros(fem.N_DOF, 1);
+    % dt_critical = +inf;
     
     % 05) Stress update algorithm
     for element_idx = 1:size(mesh.connectivity, 1)
         
         idx_nodes = reshape((2 * mesh.connectivity(element_idx, :).' + [-1, 0])', 1, []);
         
-        solver.element.vgt.f_int = zeros(fem.N_DOF_node * fem.N_nodes_element, 1);
-        solver.element.vgt.f_ext = zeros(fem.N_DOF_node * fem.N_nodes_element, 1);
+        states.element.vgt.f_int = zeros(fem.N_DOF_node * fem.N_nodes_element, 1);
+        states.element.vgt.f_ext = zeros(fem.N_DOF_node * fem.N_nodes_element, 1);
         
-        solver.element.vgt.u = solver.global.u(idx_nodes, max(n-1, 1));
-        solver.element.vgt.v_half = solver.global.v_half(idx_nodes, max(n-1, 1));
+        states.element.vgt.u = states.global.u(idx_nodes, max(n-1, 1));
+        states.element.vgt.v_half = states.global.v_half(idx_nodes, max(n-1, 1));
         
-        solver.element.mat.u = reshape(solver.element.vgt.u, [fem.N_DOF_node, fem.N_nodes_element]);
-        solver.element.mat.v_half = reshape(solver.element.vgt.v_half, [fem.N_DOF_node, fem.N_nodes_element]);
+        states.element.mat.u = reshape(states.element.vgt.u, [fem.N_DOF_node, fem.N_nodes_element]);
+        states.element.mat.v_half = reshape(states.element.vgt.v_half, [fem.N_DOF_node, fem.N_nodes_element]);
         
         if (n > 1)
-            for i = 1:length(solver.integration.roots)
-                for j = 1:length(solver.integration.roots)
+            for i = 1:length(funcs.integration.roots)
+                for j = 1:length(funcs.integration.roots)
                     
                     % Variables for the loop
-                    Xi = solver.integration.roots(i);
-                    Eta = solver.integration.roots(j);
-                    weight_Xi = solver.integration.weights(i);
-                    weight_Eta = solver.integration.weights(j);
+                    Xi = funcs.integration.roots(i);
+                    Eta = funcs.integration.roots(j);
+                    weight_Xi = funcs.integration.weights(i);
+                    weight_Eta = funcs.integration.weights(j);
                     
-                    N = solver.mat.N(Xi, Eta);
-                    B = solver.mat.B(Xi, Eta, solver.element.mat.u);
-                    J = solver.mat.J(Xi, Eta, solver.element.mat.u);
+                    N = funcs.mat.N(Xi, Eta);
+                    B = funcs.mat.B(Xi, Eta, states.element.mat.u);
+                    J = funcs.mat.J(Xi, Eta, states.element.mat.u);
                     
-                    vgt_stress = squeeze(solver.element.stress(element_idx, i, j, :));
-                    mat_stress = solver.mat.stress(vgt_stress);
+                    vgt_stress = squeeze(states.element.stress(element_idx, i, j, :));
+                    mat_stress = funcs.mat.stress(vgt_stress);
                     
+
                     % Elastic predictor
                     switch fem.constitutive_model
                         case "Cauchy"
-                            gamma_dot = (plotting_struct.gamma(n-1) - plotting_struct.gamma(max(n-2, 1))) / solver.dt(n-1);
+                            gamma_dot = (states.targets.gamma(n) - states.targets.gamma(n-1)) / states.dt(n-1);
                             
-                            vgt_strain_rate = solver.vgt.strain(1/2 * [
-                                0         gamma_dot;
-                                gamma_dot 0]);
+                            F_dot = [1 gamma_dot; 0 1];
+
+                            vgt_strain_rate = funcs.vgt.strain(1/2 * (F_dot + F_dot' - 2*eye(size(F_dot))));
                             
                             vgt_stress_rate = C * vgt_strain_rate;
                             
                         case "Trusdell"
-                            mat_L = solver.element.mat.v_half * B';
-                            vgt_D = solver.vgt.B(B) * solver.element.vgt.v_half;
+                            mat_L = states.element.mat.v_half * B';
+                            vgt_D = funcs.vgt.B(B) * states.element.vgt.v_half;
                             
-                            vgt_stress_rate = C * vgt_D + solver.vgt.stress(mat_L * mat_stress + mat_stress * mat_L' - trace(mat_L) * mat_stress);
+                            vgt_stress_rate = C * vgt_D + funcs.vgt.stress(mat_L * mat_stress + mat_stress * mat_L' - trace(mat_L) * mat_stress);
                             
                         otherwise
                             error("Constitutive model not implemented yet")
                     end
                     
-                    k = 1;
-                    vgt_stress(:, k) = vgt_stress + vgt_stress_rate * solver.dt(n-1);
-                    
-                    mat_strain_plastic(:, :, k) = zeros(2, 2);
-                    strain_p_bar(k) = 0;
-                    lambda(k) = 0;
-                    mat_n_direction(:, :, k) = zeros(2, 2);
-                    
-                    phi(k) = plasticity.phi(deviatoric(vgt_stress(:, k)), strain_p_bar(k));
-                    
+                    vgt_stress = vgt_stress + vgt_stress_rate * states.dt(n-1);
+
+
                     % Plastic corrector
-                    while(phi(k) > 0)
+                    mat_stress_dev = compute_stress_deviatoric(vgt_stress);
+                    strain_p_bar = states.plastic.strain_p_bar(element_idx);
+                    
+                    phi = funcs.plastic.phi(mat_stress_dev, strain_p_bar);
+
+                    while(phi > 0)
                         
-                        % G = data.E / (2 * (1 + data.nu));
-                        G = data.E / (1 - data.nu^2) * (1 - data.nu)/2;
+                        G = data.E / (2 * (1 + data.nu));
+                        H = (funcs.plastic.hardening(strain_p_bar + dh) - funcs.plastic.hardening(strain_p_bar)) / dh;
+                        % H = 325e6 * 0.125 * (strain_p_bar)^(0.125-1);
+                        % error("Having H->+Inf means to have lambda->0 wich create and infite loop (?)")
                         
-                        if(strain_p_bar(k) ~= 0)
-                            H = 325e6 * 0.125 * (strain_p_bar(k))^(0.125-1);
-                        else
-                            H = 325e6;
-                        end
+                        mat_n = funcs.plastic.mat_n(mat_stress_dev);
+                        lambda = phi / (3*G + H);
                         
-                        lambda(k) = phi(k) / (3*G + H);
+                        vgt_stress = vgt_stress - lambda * C * funcs.vgt.strain(mat_n);
                         
-                        mat_n_direction(:, :, k) = plasticity.n_direction(deviatoric(vgt_stress(:, k)));
+                        strain_p_bar = strain_p_bar + lambda;
+                        mat_stress_dev = compute_stress_deviatoric(vgt_stress);
                         
-                        mat_strain_plastic(:, :, k) = lambda(k) * mat_n_direction(:, :, k);
-                        vgt_stress(:, k + 1) = vgt_stress(:, k) - C * solver.vgt.strain(mat_strain_plastic(:, :, k));
+                        phi = funcs.plastic.phi(mat_stress_dev, strain_p_bar);
                         
-                        strain_p_bar(k + 1) = plasticity.strain_p_bar(mat_strain_plastic(:, :, k));
-                        
-                        phi(k + 1) = plasticity.phi(deviatoric(vgt_stress(:, k + 1)), strain_p_bar(k + 1));
-                        % phi(k + 1) = phi(k) + (vgt_n_direction(:, k)' * (- lambda(k) * C * vgt_n_direction(:, k)) - H * lambda(k));
-                        
-                        k = k + 1;
                     end
+
+                    % Updates elemental forces, stresses and plastic strain 
+                    states.element.vgt.f_int = states.element.vgt.f_int + weight_Xi * weight_Eta * funcs.vgt.B(B)' * vgt_stress * J;
+                    states.element.vgt.f_ext = states.element.vgt.f_ext + weight_Xi * weight_Eta * funcs.vgt.N(N)' * data.rho * [0; -9.81] * J; % Negligible with respect to the internal forces
                     
-                    solver.element.vgt.f_int = solver.element.vgt.f_int + weight_Xi * weight_Eta * solver.vgt.B(B)' * vgt_stress(:, k) * J;
-                    solver.element.vgt.f_ext = solver.element.vgt.f_ext + weight_Xi * weight_Eta * solver.vgt.N(N)' * data.rho * [0; -9.81] * J; % Negligible with respect to the internal forces
-                    
-                    solver.element.stress(element_idx, i, j, :) = vgt_stress(:, k);
-                    
-                    if(i == 1 && j == 1 && element_idx == 1)
-                        plotting_struct.sigma12(n) = vgt_stress(3, k);
-                    end
+                    states.element.stress(element_idx, i, j, :) = vgt_stress;
+                    states.plastic.strain_p_bar(element_idx) = strain_p_bar;
                     
                 end
             end
         end
         
-        solver.element.f = solver.element.vgt.f_ext - solver.element.vgt.f_int;
+        states.element.f = states.element.vgt.f_ext - states.element.vgt.f_int;
+        states.global.f(idx_nodes, n) = states.global.f(idx_nodes, n) + states.element.f;
         
-        dt_critical = min(compute_min_distance(solver.element.mat.u) / sqrt(data.E / data.rho), dt_critical);
-        
-        solver.global.f(idx_nodes, n) = solver.global.f(idx_nodes, n) + solver.element.f;
+        % dt_critical = min(compute_min_distance(states.element.mat.u) / sqrt(data.E / data.rho), dt_critical);
         
     end
     
-    solver.dt(n) = solver.dt(1);
-    % solver.dt(n) = 0.89 * dt_critical;
+    states.dt(n) = states.dt(1);
+    % states.dt(n) = 0.89 * dt_critical;
     
     % 06) Compute acceleration
-    solver.global.a(:, n) = solver.vgt.M \ solver.global.f(:, n);
+    states.global.a(:, n) = states.global.M \ states.global.f(:, n);
     
     % 07) Nodal velocities at half-step
     if (n == 1)
-        solver.global.v_half(:, n) = 0 + 1/2 * solver.global.a(:, n) * solver.dt(n);
+        states.global.v_half(:, n) = 0 + 1/2 * states.global.a(:, n) * states.dt(n);
     else
-        solver.global.v_half(:, n) = solver.global.v_half(:, n-1) + solver.global.a(:, n) * solver.dt(n);
+        states.global.v_half(:, n) = states.global.v_half(:, n-1) + states.global.a(:, n) * states.dt(n);
     end
     
     % 08) Enforce velocities BCs
-    solver.global.v_half(boundary.velocities.index, n) = boundary.velocities.value;
-    
+    states.global.v_half(boundary.velocities.index, n) = boundary.velocities.value;
+    % if(any(states.targets.gamma > 0.03) && all(states.targets.sigma12 >= 0))
+    %     states.global.v_half(boundary.velocities.index, n) = -boundary.velocities.value;
+    % end 
+    % 
+    % if(any(states.targets.gamma > 0.05) && all(states.targets.gamma >= -0.02))
+    %     states.global.v_half(boundary.velocities.index, n) = -boundary.velocities.value;
+    % end 
+
     % 08) Check energy balance
-    % solver.w_int(:, n) = solver.w_int(:, max(n-1, 1)) + (solver.u(:, n) - solver.u(:, max(n-1, 1)))' * ((solver.f(:, n) - solver.f(:, max(n-1, 1)))/2);
-    % solver.w_ext(:, n) = solver.w_ext(:, max(n-1, 1)) + (solver.u(:, n) - solver.u(:, max(n-1, 1)))' * ((solver.f(:, n) - solver.f(:, max(n-1, 1)))/2);
-    % solver.w_kin(:, n) = 1/2 * solver.v_half(:, n)' * solver.M * solver.v_half(:, n);
-    % solver.w(n) = 1e-3 * (1e-3 * solver.w_kin(:, n) + solver.w_int(:, n) - solver.w_ext(:, n));
-    % assert(abs(solver.w(:, n) - solver.w(:, max(n-1, 1))) < eps, "Energy Balance not verified")
+    % funcs.w_int(:, n) = funcs.w_int(:, max(n-1, 1)) + (funcs.u(:, n) - funcs.u(:, max(n-1, 1)))' * ((funcs.f(:, n) - funcs.f(:, max(n-1, 1)))/2);
+    % funcs.w_ext(:, n) = funcs.w_ext(:, max(n-1, 1)) + (funcs.u(:, n) - funcs.u(:, max(n-1, 1)))' * ((funcs.f(:, n) - funcs.f(:, max(n-1, 1)))/2);
+    % funcs.w_kin(:, n) = 1/2 * funcs.v_half(:, n)' * funcs.M * funcs.v_half(:, n);
+    % funcs.w(n) = 1e-3 * (1e-3 * funcs.w_kin(:, n) + funcs.w_int(:, n) - funcs.w_ext(:, n));
+    % assert(abs(funcs.w(:, n) - funcs.w(:, max(n-1, 1))) < eps, "Energy Balance not verified")
     
     % 09) Update nodal displacements
     if (n == 1)
-        solver.global.u(:, n) = solver.global.u(:, n) + solver.global.v_half(:, n) * solver.dt(n);
+        states.global.u(:, n) = states.global.u(:, n) + states.global.v_half(:, n) * states.dt(n);
     else
-        solver.global.u(:, n) = solver.global.u(:, n-1) + solver.global.v_half(:, n) * solver.dt(n);
+        states.global.u(:, n) = states.global.u(:, n-1) + states.global.v_half(:, n) * states.dt(n);
     end
     
     % 10) Enforce displacements BCs
-    solver.global.u(boundary.displacement.index, n) = boundary.displacement.value;
+    states.global.u(boundary.displacement.index, n) = boundary.displacement.value;
     
     % 11) Update time_step n and time t
-    gamma(n+1) = atan(solver.global.u(3, n) / solver.global.u(4, n));
-    plotting_struct.gamma(n) = gamma(n+1);
+    states.targets.sigma12(n + 1) = states.element.stress(1, 1, 1, 3);
+    states.targets.gamma(n + 1) = atan(states.global.u(3, n) / states.global.u(4, n));
     
-    t = t + solver.dt(n);
+    t = t + states.dt(n);
     n = n + 1;
+    
+    if (output.movie && mod(n, 10) == 0)
+        set(0,'DefaultFigureVisible','off');
+        if (exist('plot_figures', 'var') == 0)
+            plot_figures(1) = getframe(plot_states(mesh, states, t));
+        end
+        plot_figures(end+1) = getframe(plot_states(mesh, states, t));
+    end
     
 end
 toc
 
 clear i j element_idx idx_nodes
-clear n t C dt_critical
+clear n t C G H lambda mat_n mat_stress_dev strain_p_bar vgt_strain_rate phi dh dt_critical
 clear Xi Eta weight_Xi weight_Eta N B J vgt_stress mat_stress mat_L vgt_D vgt_stress_rate vgt_stress
 
+
+%% Movie
+
+if (output.movie)
+    
+    video_object = VideoWriter('FEM.avi', 'Motion JPEG AVI');
+    video_object.Quality = 80;
+    video_object.FrameRate = 10;
+    
+    open(video_object);
+    writeVideo(video_object, plot_figures);
+    close(video_object);
+    
+end
 
 
 %% Plots
 
+set(0,'DefaultFigureVisible','on');
 if output.plots
     
-    figure_results_analysis = figure('Name', 'Results analysis', 'NumberTitle', 'off');
-    tiledlayout(1, 3);
-    
-    % Initial vs. Deformed configuration
-    nexttile([1, 2]);
-    hold on
-    grid on
-    axis equal;
-    
-    for element_idx = 1:size(mesh.connectivity, 1)
-        
-        connections = mesh.connectivity(element_idx, [1:end, 1]);
-        idx_nodes = reshape((2 * connections.' + [-1, 0])', 1, []);
-        
-        u_mesh = mesh.coordinates(connections, :);
-        u_deformed = solver.global.u(idx_nodes, end);
-        
-        plot(u_mesh(:, 1), u_mesh(:, 2), '-ob', 'LineWidth', 2)
-        plot(u_deformed(1:2:end), u_deformed(2:2:end), '-or', 'LineWidth', 2)
-        
-    end
-    
-    title('Initial vs. Deformed configuration');
-    legend('Initial configuration', 'Deformed configuration', 'Location', 'Best')
-    xlabel('x [m]');
-    ylabel('y [m]');
-    
-    
-    % Shear stress vs. Shear strain
-    nexttile(3);
-    hold on
-    grid on
-    
-    plot(plotting_struct.gamma, plotting_struct.sigma12 * 1e-6, 'o', 'LineWidth', 2)
-    
-    title('Shear stress vs. Shear strain');
-    xlabel('Shear strain [rad]');
-    ylabel('Shear stress [MPa]');
+    figure_results_analysis = plot_states(mesh, states);
     
 end
 
-clear element_idx connections idx_nodes u_mesh u_deformed
-
-
-function S = deviatoric(vgt_stress)
-stress = vgt_stress_to_mat(vgt_stress);
-S = stress - trace(stress) / 3 * eye(size(stress, 1));
-end
+clear figure_results_analysis

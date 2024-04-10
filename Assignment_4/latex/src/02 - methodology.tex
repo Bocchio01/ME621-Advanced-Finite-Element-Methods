@@ -1,13 +1,14 @@
 \section{Methodology}
 \label{sec:methodology}
 
-To solve the given problem, we will build our code algorithm on top of the one developed for the previous assignment.
+To solve the given problem, we will implement the radial return algorithm on top of the code developed for the previous assignment.
 
-In particular, inside our Updated Lagrangian Formulation, we will check if the current configuration is in the elastic or plastic regime, and we will update the stress and strain tensors accordingly:
+In particular, inside our Updated Lagrangian Formulation, we will check if the current configuration is in the elastic or plastic regime.
+If the material is in the elastic regime, we will proceed with the standard strain/stress update algorithm.
+On the other hand, if the material is in the plastic regime, we will apply the radial return algorithm to compute the elastic and plastic components of the strain tensor and update the stress tensors accordingly.
 
-\begin{itemize}
-    \item If the current strain is below the yield strain, we will update the stress tensor using the constitutive model for the elastic regime.
-    \item If the current strain is above the yield strain, we will update the stress tensor using the constitutive model for the plastic regime.
-\end{itemize}
+In the plastic region, we will neglect any hardening due to kinematic and will assume the material to follow the isotropic hardening model:
 
-In the plastic region, we will neglect any hardening due to kinematic and will assume the material to follow the isotropic hardening model.
+\begin{equation}
+    \bar{\sigma} = \bar{\sigma}(\bar{\varepsilon_p}, \dot{\bar{\varepsilon_p}}) \approx \bar{\sigma}(\bar{\varepsilon_p})
+\end{equation}

@@ -1,24 +1,26 @@
 \section{Flow Charts}
 \label{appendix:flowcharts}
 
-The following flow chart mimics the structure of the MATLAB code used to solve the problem.
+The following flow charts mimics the structure of the MATLAB code used to solve the problem.
 
-The code is structured in two nested loops: the main loop (\textbf{Explicit Time Integration Algorithm}) and the inner loop (\textbf{Stress Update Algorithm}).
+The code is structured in three nested loops: the main loop (\textbf{Explicit Time Integration Algorithm}), the inner loop (\textbf{Stress Update Algorithm}) and the innermost loop (\textbf{Radial Return Algorithm}).
 
 The Explicit Time Integration Algorithm is the main loop that iterates until the convergence criterion is met.
 Inside the main loop, the Stress Update Algorithm is called to update the stress state of each element (at each integration point).
 
+Inside the Stress Update Algorithm, the Radial Return Algorithm is called to update the stress state of each element (at each integration point) in case of plastic behavior.
+
 \begin{figure}[H]
     \centering
 
-    \begin{tikzpicture}[node distance=2cm]
+    \begin{tikzpicture}[node distance=1.8cm]
         % Nodes
         \node (start) [startstop] {Start};
-        \node (init) [process, below of=start] {Initialize variables};
+        \node (init) [io, below of=start] {Initialize variables};
         \node (mesh) [process, below of=init] {Generate mesh};
 
-        \node (while) [decision, below of=mesh, yshift=-0.5cm] {While $\gamma < 0.07$};
-        \node (stress) [process, below of=while, yshift=-0.5cm] {Stress update algorithm};
+        \node (while) [decision, below of=mesh, yshift=-0.8cm] {While $\gamma < \gamma_{max}$};
+        \node (stress) [process, below of=while, yshift=-0.8cm] {Stress update algorithm};
         \node (acceleration) [process, below of=stress] {Compute acceleration};
         \node (velocities) [process, below of=acceleration] {Compute nodal velocities};
         \node (enforce1) [process, below of=velocities] {Set boundary conditions for velocities};
@@ -43,7 +45,7 @@ Inside the main loop, the Stress Update Algorithm is called to update the stress
 
     \caption{
         Flowchart for the \textbf{Explicit Time Integration Algorithm}.
-        The convergence criterion $\gamma < 0.07$ is relative to the given problem, while the rest of the algorithm is general.
+        The convergence criterion $\gamma < \gamma_{max}$ is relative to the given problem, while the rest of the algorithm is general.
     }
 \end{figure}
 
@@ -51,19 +53,19 @@ Inside the main loop, the Stress Update Algorithm is called to update the stress
 \begin{figure}[H]
     \centering
 
-    \begin{tikzpicture}[node distance=2cm]
+    \begin{tikzpicture}[node distance=1.8cm]
         % Nodes
         \node (start) [startstop] {From main loop};
-        \node (elementloop) [decision, below of=start, align=center, yshift=-0.3cm] {For each \\ element};
-        \node (gather) [process, below of=elementloop, yshift=-0.3cm] {Gather nodal displacements \& velocities};
+        \node (elementloop) [decision, below of=start, align=center, yshift=-0.5cm] {For each \\ element};
+        \node (gather) [io, below of=elementloop, yshift=-0.5cm] {Gather nodal displacements \& velocities};
 
-        \node (integrationloop) [decision, below of=gather, align=center, yshift=-0.5cm] {For each \\ Guass point};
-        \node (computematrices) [process, below of=integrationloop, yshift=-0.5cm] {Compute $B(\vec{\xi})$, $L(\vec{\xi})$ \& $D(\vec{\xi})$};
+        \node (integrationloop) [decision, below of=gather, align=center, yshift=-0.7cm] {For each \\ Guass point};
+        \node (computematrices) [process, below of=integrationloop, yshift=-0.7cm] {Compute $B(\vec{\xi})$, $L(\vec{\xi})$ \& $D(\vec{\xi})$};
         \node (compute) [process, below of=computematrices] {Compute $\dot{\sigma}$};
-        \node (update) [process, below of=compute] {Update $\sigma^{(trial)}$};
-        \node (iselastic) [decision, below of=update, align=center, yshift=-0.3cm] {$\sigma^{(trial)} \le S_y$};
-        \node (elastic) [process, below of=iselastic, yshift=-0.5cm, xshift=-3cm] {$\sigma = \sigma^{(trial)}$};
-        \node (plastic) [process, below of=iselastic, yshift=-0.5cm, xshift=3cm] {Radial return algorithm};
+        \node (update) [process, below of=compute] {Compute $\sigma^{(trial)}$};
+        \node (iselastic) [decision, below of=update, align=center, yshift=-0.7cm] {$\sigma^{(trial)} \le S_y$};
+        \node (elastic) [process, below of=iselastic, yshift=-0.5cm, xshift=-3cm] {$\sigma, \varepsilon_p = \sigma^{(trial)}, 0$};
+        \node (plastic) [process, below of=iselastic, yshift=-0.5cm, xshift=3cm] {$\sigma, \varepsilon_p$ = Radial return algorithm};
 
         \node (sumforces) [process, below of=elastic, xshift=3cm] {Update elemental forces};
 
@@ -99,39 +101,35 @@ Inside the main loop, the Stress Update Algorithm is called to update the stress
 \begin{figure}[H]
     \centering
 
-    \begin{tikzpicture}[node distance=2cm]
+    \begin{tikzpicture}[node distance=1.8cm]
         % Nodes
-        \node (start) [startstop] {Stress Update Algorithm};
+        \node (start) [startstop] {From Stress Update Algorithm};
 
-        \node (elementloop) [decision, below of=start, align=center, yshift=-0.3cm] {For each \\ element};
-        \node (gather) [process, below of=elementloop, yshift=-0.3cm] {Gather nodal displacements \& velocities};
+        \node (init) [io, below of=start] {$\sigma^{(trial)}, \varepsilon_p$};
 
-        \node (integrationloop) [decision, below of=gather, align=center, yshift=-0.5cm] {For each \\ Guass point};
-        \node (computematrices) [process, below of=integrationloop, yshift=-0.5cm] {Compute $B(\vec{\xi})$, $L(\vec{\xi})$ \& $D(\vec{\xi})$};
-        \node (compute) [process, below of=computematrices] {Compute $\dot{\sigma}$};
-        \node (update) [process, below of=compute] {Update $\sigma$};
-        \node (sumforces) [process, below of=update] {Update elemental forces};
+        \node (while) [decision, below of=init, yshift=-0.7cm] {While $\Phi > \delta$};
 
-        \node (scatter) [process, below of=sumforces] {Assemble elemental forces};
-        \node (stop) [startstop, below of=scatter] {Back to main loop};
+        \node (computeconstants) [process, below of=while, yshift=-0.7cm] {Compute $G$ and $H$};
+        \node (computedirection) [process, below of=computeconstants] {Compute $n$};
+        \node (computelambda) [process, below of=computedirection] {Compute $\lambda$};
+        \node (updatestress) [process, below of=computelambda] {Update $\sigma$};
+        \node (updateplastic) [process, below of=updatestress] {Update $\varepsilon_p$};
+
+        \node (stop) [startstop, left of=computeconstants, xshift=-3cm, align=center] {Back to \\ Stress Update Algorithm};
 
         % Arrows
-        \draw [arrow] (start) -- (elementloop);
-        \draw [arrow] (elementloop) -- (gather);
-        \draw [arrow] (gather) -- (integrationloop);
-        \draw [arrow] (integrationloop) -- (computematrices);
-        \draw [arrow] (computematrices) -- (compute);
-        \draw [arrow] (compute) -- (update);
-        \draw [arrow] (update) -- (sumforces);
-        \draw [arrow] (sumforces) -- (scatter);
-        \draw [arrow] (sumforces) -- +(3,0) |- (integrationloop.east) node[pos=0.25, above, rotate=-90] {Next integration point};
-        \draw [arrow] (scatter) -- (stop);
-        \draw [arrow] (scatter) -- +(4,0) |- (elementloop.east) node[pos=0.25, above, rotate=-90] {Next element of the mesh};
+        \draw [arrow] (start) -- (init);
+        \draw [arrow] (init) -- (while);
+        \draw [arrow] (while) -- node[anchor=west] {True} (computeconstants);
+        \draw [arrow] (computeconstants) -- (computedirection);
+        \draw [arrow] (computedirection) -- (computelambda);
+        \draw [arrow] (computelambda) -- (updatestress);
+        \draw [arrow] (updatestress) -- (updateplastic);
+        \draw [arrow] (updateplastic) -- +(4,0) |- (while.east) node[pos=0.25, above, rotate=-90] {Next iteration};
+
+        \draw [arrow] (while.west) -| node[pos=0.25, above] {False} (stop);
 
     \end{tikzpicture}
 
-    \caption{
-        Flowchart for the \textbf{Stress Update Algorithm}.
-        The decision blocks in this case represent for loops over the elements and the integration points.
-    }
+    \caption{Flowchart for the \textbf{Radial Return Algorithm}.}
 \end{figure}
